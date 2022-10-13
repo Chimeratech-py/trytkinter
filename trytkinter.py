@@ -76,8 +76,12 @@ class Window:
         with open('reference.txt',mode='r') as re:
             for line in re:
                 re_list.append(line)
+                
+        nlp = spacy.load('en_core_web_sm')
         
-        reftxt = re_list[0]
+        pos_list = getPOS(nlp(re_list[0]))
+        
+        reftxt = ' '.join([str(word) for word in pos_list])
         subframe = Frame(master, background="blue")
         reflbl = Label(subframe, text = "Reference Text")
         reflbl.place(relx=0.5,anchor=N)
@@ -96,7 +100,12 @@ class Window:
         candlbl = Label(subframe2, text="Candidate Text")
         candlbl.place(relx=0.5,anchor=N)
         message = Label(subframe2, text= candtxt)
-        message.place(relx=0.5, rely=0.5,anchor=CENTER)
+        message.place(relx=0.5, rely=0.5,anchor=CENTER) 
+        
+        
+        
+        
+        
         subframe2.pack(expand=True, fill=BOTH, side=LEFT)
  
 root = Tk()
