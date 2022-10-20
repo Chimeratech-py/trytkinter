@@ -1,4 +1,5 @@
 from tkinter import *
+from unittest import skip
 from weakref import ref
 from nltk.translate.bleu_score import sentence_bleu
 import spacy
@@ -69,6 +70,8 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
 # initiate = Button(root, text="Initiate", padx=10, pady=5, fg="white",  bg="#263D42")
 
 # initiate.pack()
+
+
 class Window:
     def __init__(self, master):
         reftxt = ''
@@ -80,8 +83,9 @@ class Window:
         nlp = spacy.load('en_core_web_sm')
         
         pos_list = getPOS(nlp(re_list[0]))
-        
-        reftxt = ' '.join([str(word) for word in pos_list])
+        c=0
+        #reftxt = ' '.join([str(word) for word in pos_list])
+        reftxt = re_list[c]
         subframe = Frame(master, background="blue")
         reflbl = Label(subframe, text = "Reference Text")
         reflbl.place(relx=0.5,anchor=N)
@@ -94,20 +98,35 @@ class Window:
         with open('candidate.txt',mode='r') as f:
             for line in f:
                 ca_list.append(line)
-                
-        candtxt = ca_list[1]
+        
+        
+        candtxt = ca_list[c]
         subframe2 = Frame(master, background="red")
         candlbl = Label(subframe2, text="Candidate Text")
         candlbl.place(relx=0.5,anchor=N)
         message = Label(subframe2, text= candtxt)
         message.place(relx=0.5, rely=0.5,anchor=CENTER) 
         
+        bleuscore = sentence_bleu(list(reftxt), list(candtxt), weights=(0, 0, 0, 0))
         
-        
-        
-        
+        gross = structure_evaluation(nlp(reftxt),nlp(candtxt), bleuscore)
+        bleu_lbl = Label(subframe2, text = 'standard bleu score: ' + str(bleuscore))
+        bleu_lbl.place(relx=0.5, rely=0.7,anchor=CENTER)
+        gross_lbl = Label(subframe2, text = 'Structure sensitive Bleu score: ' + str(gross))
+        gross_lbl.place(relx=0.5, rely=0.8, anchor = CENTER)
         subframe2.pack(expand=True, fill=BOTH, side=LEFT)
- 
+        
+        def nextLine(counter):
+            counter+=1
+            reftxt = re_list[counter]
+            candtxt = ca_list[counter]
+            subject.config(text=reftxt)
+            message.config(text=candtxt)
+            
+        btn_next = Button(subframe,text="Next",command =lambda  : nextLine(c))
+        btn_next.place(relx=0.5, rely=0.8, anchor = CENTER)
+        
+            
 root = Tk()
 root.geometry('300x200')
 window = Window(root)
