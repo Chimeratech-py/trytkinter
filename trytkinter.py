@@ -24,6 +24,7 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
     #referencePOSlist = ['DET', 'VERB', 'DET', 'NOUN']
     #candidatePOSlist = ['DET', 'DET', 'NOUN', 'VERB']
     
+    returnDictionary = {'grs': 0,'correctly placed tags': []}
     
     counter = 0
     correctcounter = 0
@@ -33,6 +34,7 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
         while(len(referencePOSlist) > counter):
             try:
                 if(candidatePOSlist[counter]==referencePOSlist[counter]):
+                    returnDictionary['correctly placed tags'].append(f'{candidatePOSlist[counter]} {counter}')
                     correctcounter+=1
             except:
                 skip
@@ -43,6 +45,7 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
         while(candidateLength > counter):
             try:
                 if(referencePOSlist[counter]==candidatePOSlist[counter]):
+                    returnDictionary['correctly placed tags'].append(f'{candidatePOSlist[counter]} {counter}')
                     correctcounter+=1
             except:
                 skip
@@ -58,7 +61,9 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
        
     grossscore = netscore - deduction
     
-    return grossscore
+    returnDictionary['grs'] = grossscore
+    
+    return returnDictionary
 
 def compare_POS(referencetxt, candidatetxt):
     referencePOSlist = getPOS(referencetxt)
@@ -130,12 +135,15 @@ class Window:
         
         bleuscore = sentence_bleu(list(reftxt), list(candtxt), weights=(0, 0, 0, 0))
         
-        gross = structure_evaluation(nlp(reftxt),nlp(candtxt), bleuscore)
+        dictOutput = structure_evaluation(nlp(reftxt),nlp(candtxt), bleuscore)
+        
         bleu_lbl = Label(subframe2, text = 'standard bleu score: ' + str(bleuscore))
-        bleu_lbl.place(relx=0.5, rely=0.7,anchor=CENTER)
-        gross_lbl = Label(subframe2, text = 'Structure sensitive Bleu score: ' + str(gross))
-        gross_lbl.place(relx=0.5, rely=0.8, anchor = CENTER)
-        compare_lbl = Label(subframe2, text = f'Correctly placed POS tags: {compare_POS(nlp(reftxt), nlp(candtxt))}')
+        bleu_lbl.place(relx=0.5, rely=0.6,anchor=CENTER)
+        gross_lbl = Label(subframe2, text = 'Structure sensitive Bleu score: ' + str(dictOutput['grs']))
+        gross_lbl.place(relx=0.5, rely=0.7, anchor = CENTER)
+        corr_lbl = Label(subframe2, text = f'Correctly placed POS tags:' +  str(dictOutput['correctly placed tags']))
+        corr_lbl.place(relx=0.5, rely=0.8, anchor = CENTER)
+        compare_lbl = Label(subframe2, text = f'Number of correctly placed tags: {compare_POS(nlp(reftxt), nlp(candtxt))}')
         compare_lbl.place(relx=0.5, rely=0.9, anchor = CENTER)
         subframe2.pack(expand=True, fill=BOTH, side=LEFT)
         
