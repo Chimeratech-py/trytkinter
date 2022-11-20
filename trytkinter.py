@@ -8,8 +8,9 @@ def getPOS(inputtext):
     c = 0
     POSlist = []
     for token in inputtext:
-        POSlist.append(token.pos_)
-        c+=1
+        if token.pos_ != 'SPACE':
+            POSlist.append(token.pos_)
+            c+=1
     return POSlist
 
 ##structure evaluation phase, it takes 3 arguments, which are the referencetxt, or translated text according to human judgement,
@@ -30,14 +31,23 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
         
     if(len(referencePOSlist)>candidateLength):
         while(len(referencePOSlist) > counter):
-            if(referencePOSlist[counter]==candidatePOSlist[counter]):
-                correctcounter+=1
-            counter+=1        
+            try:
+                if(candidatePOSlist[counter]==referencePOSlist[counter]):
+                    correctcounter+=1
+            except:
+                skip
+            finally:    
+                counter+=1 
+                   
     else:
         while(candidateLength > counter):
-            if(referencePOSlist[counter]==candidatePOSlist[counter]):
-                correctcounter+=1
-            counter+=1  
+            try:
+                if(referencePOSlist[counter]==candidatePOSlist[counter]):
+                    correctcounter+=1
+            except:
+                skip
+            finally:
+                counter+=1  
             
    
     mistakes = candidateLength - correctcounter
@@ -49,27 +59,38 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
     grossscore = netscore - deduction
     
     return grossscore
-# root = Tk()  
 
-# txt = ''
+def compare_POS(referencetxt, candidatetxt):
+    referencePOSlist = getPOS(referencetxt)
+    candidatePOSlist = getPOS(candidatetxt)
+    
+    counter = 0
+    correctcounter = 0
+    candidateLength = len(candidatePOSlist)
+        
+    if(len(referencePOSlist)>candidateLength):
+        while(len(referencePOSlist) > counter):
+            try:
+                if(candidatePOSlist[counter]==referencePOSlist[counter]):
+                    correctcounter+=1
+            except:
+                skip
+            finally:    
+                counter+=1 
+                   
+    else:
+        while(candidateLength > counter):
+            try:
+                if(referencePOSlist[counter]==candidatePOSlist[counter]):
+                    correctcounter+=1
+            except:
+                skip
+            finally:
+                counter+=1  
+                
+    return f'{correctcounter} of {len(referencePOSlist)} and {str(referencePOSlist)}'
+    
 
-# with open('reference.txt',mode='r') as f:
-#     txt = f.readline()
-
-
-# myLabel = Label(root, text = txt)
-
-# myLabel.pack()
-
-# canvas = Canvas(root, height = 700, width = 700, bg="#263D42")
-# canvas.pack()
-
-# frame = Frame(root, bg="white")
-# frame.place(relwidth=0.8,relheight=0.8,relx=0.1,rely=0.1)
-
-# initiate = Button(root, text="Initiate", padx=10, pady=5, fg="white",  bg="#263D42")
-
-# initiate.pack()
 
 
 class Window:
@@ -114,16 +135,19 @@ class Window:
         bleu_lbl.place(relx=0.5, rely=0.7,anchor=CENTER)
         gross_lbl = Label(subframe2, text = 'Structure sensitive Bleu score: ' + str(gross))
         gross_lbl.place(relx=0.5, rely=0.8, anchor = CENTER)
+        compare_lbl = Label(subframe2, text = f'Correctly placed POS tags: {compare_POS(nlp(reftxt), nlp(candtxt))}')
+        compare_lbl.place(relx=0.5, rely=0.9, anchor = CENTER)
         subframe2.pack(expand=True, fill=BOTH, side=LEFT)
         
-        def nextLine(counter):
-            counter+=1
-            reftxt = re_list[counter]
-            candtxt = ca_list[counter]
+        def nextLine(z):
+            z+=1
+            print(z)
+            reftxt = re_list[z]
+            candtxt = ca_list[z]
             subject.config(text=reftxt)
             message.config(text=candtxt)
             
-        btn_next = Button(subframe,text="Next",command =lambda  : nextLine(c))
+        btn_next = Button(subframe,text="Next",command =nextLine(c))
         btn_next.place(relx=0.5, rely=0.8, anchor = CENTER)
         
             
