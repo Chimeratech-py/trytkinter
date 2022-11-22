@@ -100,63 +100,79 @@ def compare_POS(referencetxt, candidatetxt):
 
 class Window:
     def __init__(self, master):
-        reftxt = ''
-        re_list = []
-        with open('reference.txt',mode='r') as re:
-            for line in re:
-                re_list.append(line)
-                
         nlp = spacy.load('en_core_web_sm')
         
-        pos_list = getPOS(nlp(re_list[0]))
-        c=0
-        #reftxt = ' '.join([str(word) for word in pos_list])
-        reftxt = re_list[c]
-        subframe = Frame(master, background="blue")
-        reflbl = Label(subframe, text = "Reference Text")
-        reflbl.place(relx=0.5,anchor=N)
-        subject = Label(subframe, text = reftxt)
-        subject.place(relx=0.5, rely=0.5,anchor=CENTER)
-        subframe.pack(expand = True, fill = BOTH, side=LEFT)
+        self.counter=0
         
-        candtxt = ''
-        ca_list = []
+        self.ref_list = []
+        with open('reference.txt',mode='r') as re:
+            for line in re:
+                self.ref_list.append(line)
+        
+        self.ca_list = []
         with open('candidate.txt',mode='r') as f:
             for line in f:
-                ca_list.append(line)
+                self.ca_list.append(line)
+                
+        self.ref_being_evaluated = self.ref_list[self.counter]
+        self.cand_being_evaluated = self.ca_list[self.counter]
+                
         
         
-        candtxt = ca_list[c]
+        
+        
+        #reftxt = ' '.join([str(word) for word in pos_list])
+        
+        subframe = Frame(master, background="blue")
+        self.reflbl = Label(subframe, text = "Reference Text")
+        self.reflbl.place(relx=0.5,anchor=N)
+        self.reftxt = Label(subframe, text = self.ref_being_evaluated)
+        self.reftxt.place(relx=0.5, rely=0.5,anchor=CENTER)
+        subframe.pack(expand = True, fill = BOTH, side=LEFT)
+        
+        
+        
+        
+        
+       
         subframe2 = Frame(master, background="red")
-        candlbl = Label(subframe2, text="Candidate Text")
-        candlbl.place(relx=0.5,anchor=N)
-        message = Label(subframe2, text= candtxt)
-        message.place(relx=0.5, rely=0.5,anchor=CENTER) 
+        self.candlbl = Label(subframe2, text="Candidate Text")
+        self.candlbl.place(relx=0.5,anchor=N)
+        self.candtxt = Label(subframe2, text= self.cand_being_evaluated)
+        self.candtxt.place(relx=0.5, rely=0.5,anchor=CENTER) 
         
-        bleuscore = sentence_bleu(list(reftxt), list(candtxt), weights=(0, 0, 0, 0))
+        bleuscore = sentence_bleu(list(self.ref_being_evaluated), list(self.cand_being_evaluated), weights=(0, 0, 0, 0))
         
-        dictOutput = structure_evaluation(nlp(reftxt),nlp(candtxt), bleuscore)
+        dictOutput = structure_evaluation(nlp(self.ref_being_evaluated),nlp(self.cand_being_evaluated), bleuscore)
         
-        bleu_lbl = Label(subframe2, text = 'standard bleu score: ' + str(bleuscore))
-        bleu_lbl.place(relx=0.5, rely=0.6,anchor=CENTER)
-        gross_lbl = Label(subframe2, text = 'Structure sensitive Bleu score: ' + str(dictOutput['grs']))
-        gross_lbl.place(relx=0.5, rely=0.7, anchor = CENTER)
-        corr_lbl = Label(subframe2, text = f'Correctly placed POS tags:' +  str(dictOutput['correctly placed tags']))
-        corr_lbl.place(relx=0.5, rely=0.8, anchor = CENTER)
-        compare_lbl = Label(subframe2, text = f'Number of correctly placed tags: {compare_POS(nlp(reftxt), nlp(candtxt))}')
-        compare_lbl.place(relx=0.5, rely=0.9, anchor = CENTER)
+        self.bleu_lbl = Label(subframe2, text = 'standard bleu score: ' + str(bleuscore))
+        self.bleu_lbl.place(relx=0.5, rely=0.6,anchor=CENTER)
+        self.gross_lbl = Label(subframe2, text = 'Structure sensitive Bleu score: ' + str(dictOutput['grs']))
+        self.gross_lbl.place(relx=0.5, rely=0.7, anchor = CENTER)
+        self.corr_lbl = Label(subframe2, text = f'Correctly placed POS tags:' +  str(dictOutput['correctly placed tags']))
+        self.corr_lbl.place(relx=0.5, rely=0.8, anchor = CENTER)
+        self.compare_lbl = Label(subframe2, text = f'Number of correctly placed tags: {compare_POS(nlp(self.ref_being_evaluated), nlp(self.cand_being_evaluated))}')
+        self.compare_lbl.place(relx=0.5, rely=0.9, anchor = CENTER)
         subframe2.pack(expand=True, fill=BOTH, side=LEFT)
         
-        def nextLine(z):
-            z+=1
-            print(z)
-            reftxt = re_list[z]
-            candtxt = ca_list[z]
-            subject.config(text=reftxt)
-            message.config(text=candtxt)
+        self.btn_next = Button(subframe,text="Next",command =self.updateTexts)
+        self.btn_next.place(relx=0.5, rely=0.8, anchor = CENTER)
+        
+    def updateTexts(self):
+        self.ref_being_evaluated = self.ref_list[self.counter]
+        self.cand_being_evaluated = self.ca_list[self.counter]
+        self.reftxt["text"] = self.ref_being_evaluated
+        self.candtxt["text"] = self.cand_being_evaluated
+        self.counter+=1
+        
+        # self.c+=1 
+        # print(self.c)
+        # reftxt = re_list[self.c]
+        # candtxt = ca_list[self.c]
+        # self.subject.config(text=reftxt)
+        # self.message.config(text=candtxt)
             
-        btn_next = Button(subframe,text="Next",command =nextLine(c))
-        btn_next.place(relx=0.5, rely=0.8, anchor = CENTER)
+        
         
             
 root = Tk()
