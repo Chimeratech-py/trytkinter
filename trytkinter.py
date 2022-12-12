@@ -93,14 +93,14 @@ def compare_POS(referencetxt, candidatetxt):
             finally:
                 counter+=1  
                 
-    return f'{correctcounter} of {len(referencePOSlist)} and {str(referencePOSlist)}'
+    return f'{correctcounter} of {len(referencePOSlist)}'
     
 
 
 
 class Window:
     def __init__(self, master):
-        nlp = spacy.load('en_core_web_sm')
+        self.nlp = spacy.load('en_core_web_sm')
         
         self.counter=0
         
@@ -141,9 +141,9 @@ class Window:
         self.candtxt = Label(subframe2, text= self.cand_being_evaluated)
         self.candtxt.place(relx=0.5, rely=0.5,anchor=CENTER) 
         
-        bleuscore = sentence_bleu(list(self.ref_being_evaluated), list(self.cand_being_evaluated), weights=(0, 0, 0, 0))
+        bleuscore = sentence_bleu(list(self.ref_being_evaluated), list(self.cand_being_evaluated), weights=(1, 0, 0, 0))
         
-        dictOutput = structure_evaluation(nlp(self.ref_being_evaluated),nlp(self.cand_being_evaluated), bleuscore)
+        dictOutput = structure_evaluation(self.nlp(self.ref_being_evaluated),self.nlp(self.cand_being_evaluated), bleuscore)
         
         self.bleu_lbl = Label(subframe2, text = 'standard bleu score: ' + str(bleuscore))
         self.bleu_lbl.place(relx=0.5, rely=0.6,anchor=CENTER)
@@ -151,7 +151,7 @@ class Window:
         self.gross_lbl.place(relx=0.5, rely=0.7, anchor = CENTER)
         self.corr_lbl = Label(subframe2, text = f'Correctly placed POS tags:' +  str(dictOutput['correctly placed tags']))
         self.corr_lbl.place(relx=0.5, rely=0.8, anchor = CENTER)
-        self.compare_lbl = Label(subframe2, text = f'Number of correctly placed tags: {compare_POS(nlp(self.ref_being_evaluated), nlp(self.cand_being_evaluated))}')
+        self.compare_lbl = Label(subframe2, text = f'Number of correctly placed tags: {compare_POS(self.nlp(self.ref_being_evaluated), self.nlp(self.cand_being_evaluated))}')
         self.compare_lbl.place(relx=0.5, rely=0.9, anchor = CENTER)
         subframe2.pack(expand=True, fill=BOTH, side=LEFT)
         
@@ -163,6 +163,12 @@ class Window:
         self.cand_being_evaluated = self.ca_list[self.counter]
         self.reftxt["text"] = self.ref_being_evaluated
         self.candtxt["text"] = self.cand_being_evaluated
+        internal_bleu_score = sentence_bleu(list(self.ref_being_evaluated), list(self.cand_being_evaluated), weights=(1, 0, 0, 0))
+        self.bleu_lbl["text"] = 'standard bleu score: ' + str(internal_bleu_score)
+        internalDictOutput = dictOutput = structure_evaluation(self.nlp(self.ref_being_evaluated),self.nlp(self.cand_being_evaluated), internal_bleu_score)
+        self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(internalDictOutput['grs'])
+        self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(internalDictOutput['correctly placed tags'])
+        self.compare_lbl["text"] = f'Number of correctly placed tags: {compare_POS(self.nlp(self.ref_being_evaluated), self.nlp(self.cand_being_evaluated))}'
         self.counter+=1
         
         # self.c+=1 
