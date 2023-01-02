@@ -1,0 +1,8 @@
+Corpus corpus_1's weight should be given. We default it to 1 for you.
+[2022-12-30 10:51:06,797 INFO] Counter vocab from 10000 samples.
+[2022-12-30 10:51:06,797 INFO] Build vocab on 10000 transformed examples/corpus.
+[2022-12-30 10:51:06,804 INFO] corpus_1's transforms: TransformPipe()
+[2022-12-30 10:51:06,804 INFO] Loading ParallelCorpus(wikimedia.en-tl.tl, wikimedia.en-tl.en, align=None)...
+[2022-12-30 10:51:07,046 INFO] Counters src:46216
+[2022-12-30 10:51:07,046 INFO] Counters tgt:44199
+
