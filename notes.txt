@@ -1,3 +1,7 @@
 1. Upon button click, proceed to next sentence
 2. POS tags must be placed on top of sentence
 3. 
+
+1/5/2023
+Build vocab and train, fake commands
+Translate stage, real command

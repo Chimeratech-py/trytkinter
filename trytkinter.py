@@ -8,6 +8,7 @@ import tkinter.scrolledtext as st
 import os
 import subprocess
 import time
+from tkinter import filedialog as fd
 
 def getPOS(inputtext):
     c = 0
@@ -192,6 +193,10 @@ class Display:
         
         self.tabControl = ttk.Notebook(self.root)
         
+        ##1ST TAB
+        ##TRANSLATION 
+        ##STAGE
+        
         self.tab1 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab1, text="Translation")
         
@@ -231,8 +236,23 @@ class Display:
         self.btn_train = ttk.Button(self.tab1, text="Train", command=lambda: onmtTrain(self.text_area))
         self.btn_train.grid(row=1, column = 1)
         
-        self.btn_translate = ttk.Button(self.tab1, text="Translate")
+        def onmtTranslate(textwidget):
+            
+            modelDir = fd.askopenfilename()
+            modelPt = os.path.split(modelDir)[1]
+            
+            sysCmd = os.system(r'onmt_translate -model ' + modelPt +' -src Original.tl -output candOut.txt -gpu 0 -verbose')
+            textwidget.configure(state='normal')
+            textwidget.delete('1.0',tk.END)
+            textwidget.insert(tk.INSERT, sysCmd)
+            textwidget.configure(state='disabled')
+            
+        self.btn_translate = ttk.Button(self.tab1, text="Translate", command=lambda:onmtTranslate(self.text_area))
         self.btn_translate.grid(row=2, column = 1)
+        
+        ##2ND TAB
+        ##FOR EVALUATION
+        ##STAGE
         
         self.tab2 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab2, text="Evaluation")
@@ -254,11 +274,58 @@ class Display:
         self.ref_being_evaluated = self.ref_list[self.counter]
         self.cand_being_evaluated = self.ca_list[self.counter]
         
+        ##labels
+        
+        self.origLbl = ttk.Label(self.tab2, text = "Original Text")
+        self.origLbl.grid(row=0,column=0)
         
         self.reflbl = ttk.Label(self.tab2, text = "Reference Text")
-        self.reflbl.place(relx=0.5,anchor='n')
-        self.reftxt = ttk.Label(self.tab2, text = self.ref_being_evaluated)
-        self.reftxt.place(relx=0.5, rely=0.5,anchor='center')
+        self.reflbl.grid(row=0,column=1)
+        
+        self.caLbl = ttk.Label(self.tab2, text = "Candidate Text")
+        self.caLbl.grid(row=0, column=2)
+        
+        ##text areas
+        self.origTextarea = st.ScrolledText(self.tab2,
+                            width = 20, 
+                            height = 10, 
+                            font = ("Times New Roman",
+                                    15))
+        self.origTextarea.grid(row = 1, column = 0)
+        
+        self.refTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",15))
+        self.refTextarea.grid(row=1,column=1)
+        
+        self.calTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",15))
+        self.calTextarea.grid(row=1,column=2)
+        
+        ##choose text file buttons
+        def chooseOrigText(textwidget):
+            pass
+        
+        self.origBtn = ttk.Button(self.tab2, text="Choose Original text file", command=lambda: chooseOrigText(self.origTextarea))
+        self.origBtn.grid(row=2, column = 0)
+    
+        def chooseRefText(textwidget):
+            pass
+        
+        self.refBtn = ttk.Button(self.tab2, text="Choose Reference text file", command=lambda: chooseRefText(self.refTextarea))
+        self.refBtn.grid(row=2, column = 1)
+        
+        def chooseCandText(textwidget):
+            pass
+        
+        self.candBtn = ttk.Button(self.tab2, text="Choose Reference text file", command=lambda: chooseCandText(self.calTextarea))
+        self.candBtn.grid(row=2, column = 2)
+        
+        ##eval buttons
+        def eval():
+            pass
+        
+        self.evalBtn = ttk.Button(self.tab2, text = "evaluate", command=lambda: eval())
+        self.evalBtn.grid(row=1,column = 3)
+        ##self.reftxt = ttk.Label(self.tab2, text = self.ref_being_evaluated)
+        ##self.reftxt.place(relx=0.5, rely=0.5,anchor='center')
         
         
         self.tabControl.pack(expand=1, fill="both")
