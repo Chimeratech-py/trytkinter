@@ -205,8 +205,13 @@ class Display:
                             height = 25, 
                             font = ("Times New Roman",
                                     15))
-        self.text_area.grid(row = 0, column = 0, rowspan= 3)
+        # self.text_area.grid(row = 0, column = 0, rowspan= 3)
+        self.text_area.grid(row = 0, column = 0)
         self.text_area.configure(state ='disabled')
+        
+        self.translated_text_area = st.ScrolledText(self.tab1, width = 50, height = 25, font = ("Times New Roman", 15))
+        self.translated_text_area.grid(row = 0, column = 1)
+        self.translated_text_area.configure(state='disabled')
         
         def buildVocab(textwidget):
             textwidget.configure(state='normal')
@@ -222,33 +227,54 @@ class Display:
             # returned_value = os.system(r'cmd /k onmt_build_vocab -config en_tl.yaml -n_sample 10000')
             # print('returned value: ', returned_value)
             
-        self.btn_vocab = ttk.Button(self.tab1,text="Build Vocab",command=lambda: buildVocab(self.text_area))
-        self.btn_vocab.grid(row = 0, column= 1)
+        # self.btn_vocab = ttk.Button(self.tab1,text="Build Vocab",command=lambda: buildVocab(self.text_area))
+        # self.btn_vocab.grid(row = 0, column= 1)
         
         def onmtTrain(textwidget):
             textwidget.configure(state='normal')
+            beginProcessWindow = tk.Toplevel(self.tab2)
+            beginProcessWindow.geometry("750x250")
+            beginProcessWindow.title("Process")
+            tk.Label(beginProcessWindow, text = "Beginning process...", font=('Times New Roman',15)).place(x=150,y=80)
+            self.root.after(5000, beginProcessWindow.destroy)
+            
             textwidget.delete('1.0',tk.END)
-            textwidget.insert(tk.INSERT, 'updated')
+            textwidget.insert(tk.INSERT, 'training successful')
             textwidget.configure(state='disabled')
             ##returned_value = os.system(r'cmd /k onmt_train -config en_tl.yaml')
             ##print('returned value: ', returned_value)
         
-        self.btn_train = ttk.Button(self.tab1, text="Train", command=lambda: onmtTrain(self.text_area))
-        self.btn_train.grid(row=1, column = 1)
+        # self.btn_train = ttk.Button(self.tab1, text="Train", command=lambda: onmtTrain(self.text_area))
+        # self.btn_train.grid(row=1, column = 1)
         
-        def onmtTranslate(textwidget):
+        def onmtTranslate(textwidget, secondtextwidget):
             
             modelDir = fd.askopenfilename()
             modelPt = os.path.split(modelDir)[1]
             
-            sysCmd = os.system(r'onmt_translate -model ' + modelPt +' -src Original.tl -output candOut.txt -gpu 0 -verbose')
+            origDir = fd.askopenfilename()
+            origTl = os.path.split(origDir)[1]
+                        
+            sysCmd = os.system(r'onmt_translate -model ' + modelPt + ' -src ' + origTl + ' -output candOut.txt -verbose')
+            
+            with open(origTl,'r') as file:
+                origLines = file.read()
+                
+            with open('candOut.txt','r') as file:
+                transLines = file.read()
+                
             textwidget.configure(state='normal')
             textwidget.delete('1.0',tk.END)
-            textwidget.insert(tk.INSERT, sysCmd)
+            textwidget.insert(tk.INSERT, origLines)
             textwidget.configure(state='disabled')
             
-        self.btn_translate = ttk.Button(self.tab1, text="Translate", command=lambda:onmtTranslate(self.text_area))
-        self.btn_translate.grid(row=2, column = 1)
+            secondtextwidget.configure(state='normal')
+            secondtextwidget.delete('1.0',tk.END)
+            secondtextwidget.insert(tk.INSERT, transLines)
+            secondtextwidget.configure(state='disabled')
+            
+        self.btn_translate = ttk.Button(self.tab1, text="Translate", command=lambda:onmtTranslate(self.text_area,self.translated_text_area))
+        self.btn_translate.grid(row=1, column = 1)
         
         ##2ND TAB
         ##FOR EVALUATION
@@ -259,20 +285,7 @@ class Display:
         
         self.nlp = spacy.load('en_core_web_sm')
         
-        self.counter=0
         
-        self.ref_list = []
-        with open('reference.txt',mode='r') as re:
-            for line in re:
-                self.ref_list.append(line)
-        
-        self.ca_list = []
-        with open('candidate.txt',mode='r') as f:
-            for line in f:
-                self.ca_list.append(line)
-                
-        self.ref_being_evaluated = self.ref_list[self.counter]
-        self.cand_being_evaluated = self.ca_list[self.counter]
         
         ##labels
         
@@ -291,39 +304,113 @@ class Display:
                             height = 10, 
                             font = ("Times New Roman",
                                     15))
-        self.origTextarea.grid(row = 1, column = 0)
+        self.origTextarea.grid(row = 1, column = 0, rowspan=4)
         
         self.refTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",15))
-        self.refTextarea.grid(row=1,column=1)
+        self.refTextarea.grid(row=1,column=1, rowspan=4)
         
         self.calTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",15))
-        self.calTextarea.grid(row=1,column=2)
+        self.calTextarea.grid(row=1,column=2, rowspan=4)
+        
+        ##eval data labels
+        self.bleu_lbl = ttk.Label(self.tab2, text = 'standard bleu score: ')
+        self.bleu_lbl.grid(row = 1, column = 3)
+        self.gross_lbl = ttk.Label(self.tab2, text = 'Structure sensitive Bleu score: ')
+        self.gross_lbl.grid(row = 2, column = 3)
+        self.corr_lbl = ttk.Label(self.tab2, text = f'Correctly placed POS tags:')
+        self.corr_lbl.grid(row = 3, column= 3 )
+        self.compare_lbl = ttk.Label(self.tab2, text = f'Number of correctly placed tags:')
+        self.compare_lbl.grid(row = 4, column =3)
         
         ##choose text file buttons
+        self.origLineList = []
         def chooseOrigText(textwidget):
-            pass
+            origDir = fd.askopenfilename()
+            origFileName = os.path.split(origDir)[1]
+            
+            with open(origFileName,'r') as origFileLines:
+                for line in origFileLines:
+                    self.origLineList.append(line)
+                    
+            textwidget.configure(state='normal')
+            textwidget.insert(tk.INSERT,self.origLineList[0])
+            textwidget.configure(state='disabled')
         
         self.origBtn = ttk.Button(self.tab2, text="Choose Original text file", command=lambda: chooseOrigText(self.origTextarea))
-        self.origBtn.grid(row=2, column = 0)
+        self.origBtn.grid(row=5, column = 0)
     
+        self.refLineList = []
         def chooseRefText(textwidget):
-            pass
+            refDir = fd.askopenfilename()
+            refFileName = os.path.split(refDir)[1]
+            
+            with open(refFileName, 'r') as reFileLines:
+                for line in reFileLines:
+                    self.refLineList.append(line)
+                    
+            textwidget.configure(state='normal')
+            textwidget.insert(tk.INSERT,self.refLineList[0])
+            textwidget.configure(state='disabled')
         
         self.refBtn = ttk.Button(self.tab2, text="Choose Reference text file", command=lambda: chooseRefText(self.refTextarea))
-        self.refBtn.grid(row=2, column = 1)
+        self.refBtn.grid(row=5, column = 1)
         
+        self.candLineList = []
         def chooseCandText(textwidget):
-            pass
+            candDir = fd.askopenfilename()
+            candFileName = os.path.split(candDir)[1]
+            
+            with open(candFileName,'r') as candFileLines:
+                for line in candFileLines:
+                    self.candLineList.append(line)
+
+            textwidget.configure(state='normal')
+            textwidget.insert(tk.INSERT,self.candLineList[0])
+            textwidget.configure(state='disabled')
+            
+            bleuSc = sentence_bleu(list(self.refLineList[0]), list(self.candLineList[0]), weights=(1, 0, 0, 0))
+            self.bleu_lbl["text"] = 'standard bleu score: ' + str(bleuSc)
+            
+            grossSc = structure_evaluation(self.nlp(self.refLineList[0]), self.nlp(self.candLineList[0]),bleuSc)
+            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(grossSc['grs'])
+            
+            self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
+
+            self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0]))
+        self.candBtn = ttk.Button(self.tab2, text="Choose Candidate text file", command=lambda: chooseCandText(self.calTextarea))
+        self.candBtn.grid(row=5, column = 2)
         
-        self.candBtn = ttk.Button(self.tab2, text="Choose Reference text file", command=lambda: chooseCandText(self.calTextarea))
-        self.candBtn.grid(row=2, column = 2)
         
+        
+        self.counter = 0
         ##eval buttons
-        def eval():
-            pass
-        
-        self.evalBtn = ttk.Button(self.tab2, text = "evaluate", command=lambda: eval())
-        self.evalBtn.grid(row=1,column = 3)
+        def nextEval():
+            self.counter+=1
+            self.origTextarea.configure(state='normal')
+            self.origTextarea.delete('1.0',tk.END)
+            self.origTextarea.insert(tk.INSERT,self.origLineList[self.counter])
+            self.origTextarea.configure(state='disable')
+            self.refTextarea.configure(state='normal')
+            self.refTextarea.delete('1.0',tk.END)
+            self.refTextarea.insert(tk.INSERT,self.refLineList[self.counter])
+            self.refTextarea.configure(state='disable')
+            self.calTextarea.configure(state='normal')
+            self.calTextarea.delete('1.0',tk.END)
+            self.calTextarea.insert(tk.INSERT,self.candLineList[self.counter])
+            self.calTextarea.configure(state='disabled')
+
+            bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
+            self.bleu_lbl["text"] = 'standard bleu score: ' + str(bleuSc)
+            
+            grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
+            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(grossSc['grs'])
+            
+            self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
+
+            self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter]))
+            
+        self.evalBtn = ttk.Button(self.tab2, text = "next", command=lambda: nextEval())
+        self.evalBtn.grid(row=5,column = 3)
         ##self.reftxt = ttk.Label(self.tab2, text = self.ref_being_evaluated)
         ##self.reftxt.place(relx=0.5, rely=0.5,anchor='center')
         
