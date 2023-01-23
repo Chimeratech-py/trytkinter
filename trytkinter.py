@@ -9,6 +9,13 @@ import os
 import subprocess
 import time
 from tkinter import filedialog as fd
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
+NavigationToolbar2Tk)
+from matplotlib.figure import Figure
+import numpy
 
 def getPOS(inputtext):
     c = 0
@@ -187,30 +194,42 @@ def compare_POS(referencetxt, candidatetxt):
 class Display:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.geometry('900x900')
         
-        self.root.title("GUI Tabs Class")
+        self.root.geometry('900x600')
+        self.root.resizable(False,False)
+        self.root.title("Structure Sensitive BLEU")
         
         self.tabControl = ttk.Notebook(self.root)
+        
         
         ##1ST TAB
         ##TRANSLATION 
         ##STAGE
         
         self.tab1 = ttk.Frame(self.tabControl)
+        
+        #self.tab1.columnconfigure(0, weight=1)
+        #self.tab1.columnconfigure(1, weight=2)
+        
         self.tabControl.add(self.tab1, text="Translation")
+        
+        self.tab1origLbl = ttk.Label(self.tab1, text = "Original Text")
+        self.tab1origLbl.grid(row=0,column=0, padx=20, pady=20)
+        
+        self.tab2transLbl = ttk.Label(self.tab1, text = "Translated Text")
+        self.tab2transLbl.grid(row=0,column=1)
         
         self.text_area = st.ScrolledText(self.tab1,
                             width = 50, 
-                            height = 25, 
+                            height = 24, 
                             font = ("Times New Roman",
-                                    15))
+                                    12))
         # self.text_area.grid(row = 0, column = 0, rowspan= 3)
-        self.text_area.grid(row = 0, column = 0)
+        self.text_area.grid(row = 1, column = 0, padx=20)
         self.text_area.configure(state ='disabled')
         
-        self.translated_text_area = st.ScrolledText(self.tab1, width = 50, height = 25, font = ("Times New Roman", 15))
-        self.translated_text_area.grid(row = 0, column = 1)
+        self.translated_text_area = st.ScrolledText(self.tab1, width = 50, height = 24, font = ("Times New Roman", 12))
+        self.translated_text_area.grid(row = 1, column = 1)
         self.translated_text_area.configure(state='disabled')
         
         def buildVocab(textwidget):
@@ -274,7 +293,7 @@ class Display:
             secondtextwidget.configure(state='disabled')
             
         self.btn_translate = ttk.Button(self.tab1, text="Translate", command=lambda:onmtTranslate(self.text_area,self.translated_text_area))
-        self.btn_translate.grid(row=1, column = 1)
+        self.btn_translate.grid(row=2, column = 1, pady=20,sticky=tk.E)
         
         ##2ND TAB
         ##FOR EVALUATION
@@ -285,42 +304,48 @@ class Display:
         
         self.nlp = spacy.load('en_core_web_sm')
         
-        
+        ##graph
+        self.f = Figure(figsize=(5,5),dpi=100)
+        canvas = FigureCanvasTkAgg(self.f,self.tab2)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0,column = 0,columnspan=3)
         
         ##labels
         
         self.origLbl = ttk.Label(self.tab2, text = "Original Text")
-        self.origLbl.grid(row=0,column=0)
+        self.origLbl.grid(row=1,column=0)
         
         self.reflbl = ttk.Label(self.tab2, text = "Reference Text")
-        self.reflbl.grid(row=0,column=1)
+        self.reflbl.grid(row=1,column=1)
         
         self.caLbl = ttk.Label(self.tab2, text = "Candidate Text")
-        self.caLbl.grid(row=0, column=2)
+        self.caLbl.grid(row=1, column=2)
         
         ##text areas
         self.origTextarea = st.ScrolledText(self.tab2,
                             width = 20, 
                             height = 10, 
                             font = ("Times New Roman",
-                                    15))
-        self.origTextarea.grid(row = 1, column = 0, rowspan=4)
+                                    12))
+        self.origTextarea.grid(row = 2, column = 0, rowspan=4)
         
-        self.refTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",15))
-        self.refTextarea.grid(row=1,column=1, rowspan=4)
+        self.refTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",12))
+        self.refTextarea.grid(row=2,column=1, rowspan=4)
         
-        self.calTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",15))
-        self.calTextarea.grid(row=1,column=2, rowspan=4)
+        self.calTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",12))
+        self.calTextarea.grid(row=2,column=2, rowspan=4)
         
         ##eval data labels
         self.bleu_lbl = ttk.Label(self.tab2, text = 'standard bleu score: ')
-        self.bleu_lbl.grid(row = 1, column = 3)
+        self.bleu_lbl.grid(row = 2, column = 3)
         self.gross_lbl = ttk.Label(self.tab2, text = 'Structure sensitive Bleu score: ')
-        self.gross_lbl.grid(row = 2, column = 3)
+        self.gross_lbl.grid(row = 3, column = 3)
         self.corr_lbl = ttk.Label(self.tab2, text = f'Correctly placed POS tags:')
-        self.corr_lbl.grid(row = 3, column= 3 )
+        self.corr_lbl.grid(row = 4, column= 3 )
         self.compare_lbl = ttk.Label(self.tab2, text = f'Number of correctly placed tags:')
-        self.compare_lbl.grid(row = 4, column =3)
+        self.compare_lbl.grid(row = 5, column =3)
+        
+        
         
         ##choose text file buttons
         self.origLineList = []
@@ -337,7 +362,7 @@ class Display:
             textwidget.configure(state='disabled')
         
         self.origBtn = ttk.Button(self.tab2, text="Choose Original text file", command=lambda: chooseOrigText(self.origTextarea))
-        self.origBtn.grid(row=5, column = 0)
+        self.origBtn.grid(row=6, column = 0)
     
         self.refLineList = []
         def chooseRefText(textwidget):
@@ -353,7 +378,12 @@ class Display:
             textwidget.configure(state='disabled')
         
         self.refBtn = ttk.Button(self.tab2, text="Choose Reference text file", command=lambda: chooseRefText(self.refTextarea))
-        self.refBtn.grid(row=5, column = 1)
+        self.refBtn.grid(row=6, column = 1)
+        
+        self.xCoord = []
+        self.xCoordCounter = 1
+        self.bleuY = []
+        self.grossY = []
         
         self.candLineList = []
         def chooseCandText(textwidget):
@@ -370,21 +400,40 @@ class Display:
             
             bleuSc = sentence_bleu(list(self.refLineList[0]), list(self.candLineList[0]), weights=(1, 0, 0, 0))
             self.bleu_lbl["text"] = 'standard bleu score: ' + str(bleuSc)
+            self.bleuY.append(bleuSc)
             
             grossSc = structure_evaluation(self.nlp(self.refLineList[0]), self.nlp(self.candLineList[0]),bleuSc)
             self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(grossSc['grs'])
+            self.grossY.append(grossSc['grs'])
+            
+            self.xCoord.append(self.xCoordCounter)
+            self.xCoordCounter+=1
             
             self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
 
             self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0]))
+
+            a = self.f.add_subplot(111)
+            a.plot(self.xCoord, self.bleuY, label = "bleu Score")
+            a.plot(self.xCoord, self.grossY, label = "gross Score")
+            a.legend()
+            
         self.candBtn = ttk.Button(self.tab2, text="Choose Candidate text file", command=lambda: chooseCandText(self.calTextarea))
-        self.candBtn.grid(row=5, column = 2)
+        self.candBtn.grid(row=6, column = 2)
         
         
         
         self.counter = 0
+        
         ##eval buttons
+        
+        def update_line(hl, new_data):
+            hl.set_xdata(numpy.append(hl.get_xdata(), new_data))
+            hl.set_ydata(numpy.append(hl.get_ydata(), new_data))
+            plt.draw()
+            
         def nextEval():
+            
             self.counter+=1
             self.origTextarea.configure(state='normal')
             self.origTextarea.delete('1.0',tk.END)
@@ -401,19 +450,45 @@ class Display:
 
             bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
             self.bleu_lbl["text"] = 'standard bleu score: ' + str(bleuSc)
+            self.bleuY.append(bleuSc)
             
             grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
             self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(grossSc['grs'])
+            self.grossY.append(grossSc['grs'])
+            
+            self.xCoord.append(self.xCoordCounter)
+            self.xCoordCounter+=1
+            
+            a = self.f.add_subplot(111)
+            a.plot(self.xCoord, self.bleuY, label = "bleu Score")
+            a.plot(self.xCoord, self.grossY, label = "gross Score")
+            a.legend()
             
             self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
 
             self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter]))
             
         self.evalBtn = ttk.Button(self.tab2, text = "next", command=lambda: nextEval())
-        self.evalBtn.grid(row=5,column = 3)
+        self.evalBtn.grid(row=6,column = 3)
+        
+        
+        
+        def showGraph():
+            f = Figure(figsize=(5,5),dpi=100)
+            a = f.add_subplot(111)
+            a.plot(self.xCoord, self.bleuY, label = "bleu Score")
+            a.plot(self.xCoord, self.grossY, label = "gross Score")
+            a.legend()
+            
+            canvas = FigureCanvasTkAgg(f,self.tab2)
+            canvas.draw()
+            canvas.get_tk_widget().grid(row=6,column = 0,columnspan=3)
+            
         ##self.reftxt = ttk.Label(self.tab2, text = self.ref_being_evaluated)
         ##self.reftxt.place(relx=0.5, rely=0.5,anchor='center')
         
+        self.showGraphBtn = ttk.Button(self.tab2, text = "show graph", command=lambda:showGraph())
+        self.showGraphBtn.grid(row=6,column = 4)
         
         self.tabControl.pack(expand=1, fill="both")
         

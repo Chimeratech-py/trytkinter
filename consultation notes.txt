@@ -1,0 +1,4 @@
+1. Line graph
+2. Not resizable window DONE
+3. Label what text file format
+4. Put POS tags below each text
