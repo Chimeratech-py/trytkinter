@@ -267,7 +267,7 @@ class Display:
         # self.btn_train.grid(row=1, column = 1)
         
         def onmtTranslate(textwidget, secondtextwidget):
-            
+            tk.messagebox.showinfo("Reminder",  "Only .txt files are accepted")
             modelDir = fd.askopenfilename()
             modelPt = os.path.split(modelDir)[1]
             
@@ -298,52 +298,70 @@ class Display:
         ##2ND TAB
         ##FOR EVALUATION
         ##STAGE
+        ##
+        ##
+        ##
+        
         
         self.tab2 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab2, text="Evaluation")
         
         self.nlp = spacy.load('en_core_web_sm')
         
-        ##graph
-        self.f = Figure(figsize=(5,5),dpi=100)
-        canvas = FigureCanvasTkAgg(self.f,self.tab2)
-        canvas.draw()
-        canvas.get_tk_widget().grid(row=0,column = 0,columnspan=3)
+        self.tab2.columnconfigure(0, weight = 2)
+        self.tab2.columnconfigure(1, weight = 2)
+        self.tab2.columnconfigure(2, weight = 1)
+        
+        
+            
+        #graph
+        # self.f = Figure(figsize=(3,3),dpi=85)
+        
+        # a = self.f.add_subplot(111)
+        # a.plot([1,2,3,4,5],[0.89,0.56,0.56,0.22,0.17],label="bleu Score")
+        # a.plot([1,2,3,4,5],[0.1,0.56,0.43,0.16,0.1],label = "gross Score")
+        # a.legend()
+        # canvas = FigureCanvasTkAgg(self.f,self.tab2)
+        # canvas.draw()
+        # canvas.get_tk_widget().grid(row=0,column = 1)
         
         ##labels
         
-        self.origLbl = ttk.Label(self.tab2, text = "Original Text")
-        self.origLbl.grid(row=1,column=0)
+        #self.origLbl = ttk.Label(self.tab2, text = "Original Text")
+        #self.origLbl.grid(row=1,column=0)
         
         self.reflbl = ttk.Label(self.tab2, text = "Reference Text")
-        self.reflbl.grid(row=1,column=1)
+        self.reflbl.grid(row=1,column=0)
         
         self.caLbl = ttk.Label(self.tab2, text = "Candidate Text")
-        self.caLbl.grid(row=1, column=2)
+        self.caLbl.grid(row=1, column=1)
         
         ##text areas
-        self.origTextarea = st.ScrolledText(self.tab2,
-                            width = 20, 
-                            height = 10, 
-                            font = ("Times New Roman",
-                                    12))
-        self.origTextarea.grid(row = 2, column = 0, rowspan=4)
+        #self.origTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman", 12))
+        #self.origTextarea.grid(row = 2, column = 0, rowspan=4)
         
-        self.refTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",12))
-        self.refTextarea.grid(row=2,column=1, rowspan=4)
+        self.refTextarea = st.ScrolledText(self.tab2, font = ("Times New Roman",7))
+        self.refTextarea.grid(row=2,column=0, rowspan=4)
         
-        self.calTextarea = st.ScrolledText(self.tab2, width = 20, height = 10, font = ("Times New Roman",12))
-        self.calTextarea.grid(row=2,column=2, rowspan=4)
+        self.calTextarea = st.ScrolledText(self.tab2, font = ("Times New Roman",7))
+        self.calTextarea.grid(row=2,column=1, rowspan=4)
         
+        self.logFr = tk.Frame(self.tab2)
+        self.logFr.grid(row=0, column = 0, sticky=tk.W)
         ##eval data labels
-        self.bleu_lbl = ttk.Label(self.tab2, text = 'standard bleu score: ')
-        self.bleu_lbl.grid(row = 2, column = 3)
-        self.gross_lbl = ttk.Label(self.tab2, text = 'Structure sensitive Bleu score: ')
-        self.gross_lbl.grid(row = 3, column = 3)
-        self.corr_lbl = ttk.Label(self.tab2, text = f'Correctly placed POS tags:')
-        self.corr_lbl.grid(row = 4, column= 3 )
-        self.compare_lbl = ttk.Label(self.tab2, text = f'Number of correctly placed tags:')
-        self.compare_lbl.grid(row = 5, column =3)
+        self.bleu_lbl = ttk.Label(self.logFr, text = 'standard bleu score: ')
+        self.bleu_lbl.grid(row = 0, column = 0, sticky=tk.W)
+        self.gross_lbl = ttk.Label(self.logFr, text = 'Structure sensitive Bleu score: ')
+        self.gross_lbl.grid(row = 1, column = 0, sticky=tk.W)
+        self.corr_lbl = ttk.Label(self.logFr, text = f'Correctly placed POS tags:')
+        self.corr_lbl.grid(row = 2, column= 0, sticky=tk.W )
+        self.compare_lbl = ttk.Label(self.logFr, text = f'Number of correctly placed tags:')
+        self.compare_lbl.grid(row = 3, column =0, sticky=tk.W)
+        
+        ##button frame
+        self.buttonFr = tk.Frame(self.tab2)
+        self.buttonFr.grid(row=1,column=2,rowspan=5,sticky=tk.W)
+        
         
         
         
@@ -361,8 +379,8 @@ class Display:
             textwidget.insert(tk.INSERT,self.origLineList[0])
             textwidget.configure(state='disabled')
         
-        self.origBtn = ttk.Button(self.tab2, text="Choose Original text file", command=lambda: chooseOrigText(self.origTextarea))
-        self.origBtn.grid(row=6, column = 0)
+        #self.origBtn = ttk.Button(self.tab2, text="Choose Original text file", command=lambda: chooseOrigText(self.origTextarea))
+        #self.origBtn.grid(row=6, column = 0)
     
         self.refLineList = []
         def chooseRefText(textwidget):
@@ -377,8 +395,8 @@ class Display:
             textwidget.insert(tk.INSERT,self.refLineList[0])
             textwidget.configure(state='disabled')
         
-        self.refBtn = ttk.Button(self.tab2, text="Choose Reference text file", command=lambda: chooseRefText(self.refTextarea))
-        self.refBtn.grid(row=6, column = 1)
+        # self.refBtn = ttk.Button(self.tab2, text="Choose Reference text file", command=lambda: chooseRefText(self.refTextarea))
+        # self.refBtn.grid(row=6, column = 1)
         
         self.xCoord = []
         self.xCoordCounter = 1
@@ -386,7 +404,21 @@ class Display:
         self.grossY = []
         
         self.candLineList = []
-        def chooseCandText(textwidget):
+        def Upload(textwidgets):
+            tk.messagebox.showinfo("Reminder",  "Only .txt files are accepted")
+            
+            refDir = fd.askopenfilename()
+            refFileName = os.path.split(refDir)[1]
+            
+            with open(refFileName, 'r') as reFileLines:
+                for line in reFileLines:
+                    self.refLineList.append(line)
+                    
+            textwidgets[0].configure(state='normal')
+            refPOS = str(getPOS(self.nlp(self.refLineList[0])))
+            textwidgets[0].insert(tk.INSERT,self.refLineList[0] + "\n " + refPOS)
+            textwidgets[0].configure(state='disabled')
+            
             candDir = fd.askopenfilename()
             candFileName = os.path.split(candDir)[1]
             
@@ -394,16 +426,19 @@ class Display:
                 for line in candFileLines:
                     self.candLineList.append(line)
 
-            textwidget.configure(state='normal')
-            textwidget.insert(tk.INSERT,self.candLineList[0])
-            textwidget.configure(state='disabled')
+            textwidgets[1].configure(state='normal')
+            candPOS = str(getPOS(self.nlp(self.candLineList[0])))
+            textwidgets[1].insert(tk.INSERT,self.candLineList[0] + "\n " + candPOS)
+            textwidgets[1].configure(state='disabled')
             
             bleuSc = sentence_bleu(list(self.refLineList[0]), list(self.candLineList[0]), weights=(1, 0, 0, 0))
-            self.bleu_lbl["text"] = 'standard bleu score: ' + str(bleuSc)
+            format_bleuSc = "{:.2f}".format(bleuSc)
+            self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
             self.bleuY.append(bleuSc)
             
             grossSc = structure_evaluation(self.nlp(self.refLineList[0]), self.nlp(self.candLineList[0]),bleuSc)
-            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(grossSc['grs'])
+            format_grossSc = "{:.2f}".format(grossSc['grs'])
+            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
             self.grossY.append(grossSc['grs'])
             
             self.xCoord.append(self.xCoordCounter)
@@ -413,13 +448,14 @@ class Display:
 
             self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0]))
 
-            a = self.f.add_subplot(111)
-            a.plot(self.xCoord, self.bleuY, label = "bleu Score")
-            a.plot(self.xCoord, self.grossY, label = "gross Score")
-            a.legend()
             
-        self.candBtn = ttk.Button(self.tab2, text="Choose Candidate text file", command=lambda: chooseCandText(self.calTextarea))
-        self.candBtn.grid(row=6, column = 2)
+            # a = self.f.add_subplot(111)
+            # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
+            # a.plot(self.xCoord, self.grossY, label = "gross Score")
+            # a.legend()
+            
+        self.candBtn = ttk.Button(self.buttonFr, text="Upload", command=lambda: Upload([self.refTextarea, self.calTextarea]))
+        self.candBtn.grid(row=0, column = 0)
         
         
         
@@ -435,66 +471,117 @@ class Display:
         def nextEval():
             
             self.counter+=1
-            self.origTextarea.configure(state='normal')
-            self.origTextarea.delete('1.0',tk.END)
-            self.origTextarea.insert(tk.INSERT,self.origLineList[self.counter])
-            self.origTextarea.configure(state='disable')
             self.refTextarea.configure(state='normal')
             self.refTextarea.delete('1.0',tk.END)
-            self.refTextarea.insert(tk.INSERT,self.refLineList[self.counter])
+            refPOS = str(getPOS(self.nlp(self.refLineList[self.counter])))
+            self.refTextarea.insert(tk.INSERT,self.refLineList[self.counter] + "\n" + refPOS)
             self.refTextarea.configure(state='disable')
+            
             self.calTextarea.configure(state='normal')
             self.calTextarea.delete('1.0',tk.END)
-            self.calTextarea.insert(tk.INSERT,self.candLineList[self.counter])
+            candPOS = str(getPOS(self.nlp(self.candLineList[self.counter])))
+            self.calTextarea.insert(tk.INSERT,self.candLineList[self.counter] + "\n" + candPOS)
             self.calTextarea.configure(state='disabled')
 
             bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
-            self.bleu_lbl["text"] = 'standard bleu score: ' + str(bleuSc)
+            format_bleuSc = "{:.2f}".format(bleuSc)
+            self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
             self.bleuY.append(bleuSc)
             
             grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
-            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(grossSc['grs'])
+            format_grossSc = "{:.2f}".format(grossSc['grs'])
+            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
             self.grossY.append(grossSc['grs'])
             
             self.xCoord.append(self.xCoordCounter)
             self.xCoordCounter+=1
             
-            a = self.f.add_subplot(111)
-            a.plot(self.xCoord, self.bleuY, label = "bleu Score")
-            a.plot(self.xCoord, self.grossY, label = "gross Score")
-            a.legend()
+            # a = self.f.add_subplot(111)
+            # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
+            # a.plot(self.xCoord, self.grossY, label = "gross Score")
+            # a.legend()
             
             self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
 
             self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter]))
             
-        self.evalBtn = ttk.Button(self.tab2, text = "next", command=lambda: nextEval())
-        self.evalBtn.grid(row=6,column = 3)
+            showGraph()
+        self.evalBtn = ttk.Button(self.buttonFr, text = "Next", command=lambda: nextEval())
+        self.evalBtn.grid(row=1,column = 0)
         
         
         
-        def showGraph():
-            f = Figure(figsize=(5,5),dpi=100)
-            a = f.add_subplot(111)
-            a.plot(self.xCoord, self.bleuY, label = "bleu Score")
-            a.plot(self.xCoord, self.grossY, label = "gross Score")
-            a.legend()
-            
-            canvas = FigureCanvasTkAgg(f,self.tab2)
-            canvas.draw()
-            canvas.get_tk_widget().grid(row=6,column = 0,columnspan=3)
+        
             
         ##self.reftxt = ttk.Label(self.tab2, text = self.ref_being_evaluated)
         ##self.reftxt.place(relx=0.5, rely=0.5,anchor='center')
         
-        self.showGraphBtn = ttk.Button(self.tab2, text = "show graph", command=lambda:showGraph())
-        self.showGraphBtn.grid(row=6,column = 4)
+        def showGraph():
+            f = Figure(figsize=(3,3),dpi=85)
+            a = f.add_subplot(111)
+            a.plot(self.xCoord, self.bleuY, label = "bleu Score")
+            a.plot(self.xCoord, self.grossY, label = "SS Bleu Score")
+            a.legend()
+            
+            canvas = FigureCanvasTkAgg(f,self.tab2)
+            canvas.draw()
+            canvas.get_tk_widget().grid(row=0,column = 1)
+            
+        
         
         self.tabControl.pack(expand=1, fill="both")
         
         
+        ##3rd tab
+        ##For instructions
+        ##
+        ##
+        ##
+        
+        self.tab3 = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.tab3, text="Instructions")
+        
+        standardtab3LblFont = 'Times New Roman', 12
+        transInstructionLbl = ttk.Label(self.tab3, text = 'Translation phase', font = standardtab3LblFont)
+        transInstructionLbl.grid(row = 0, column = 0, sticky=tk.W)
+        
+        step1Lbl = ttk.Label(self.tab3, text = 'Step 1: Click the translate button', font = standardtab3LblFont)
+        step1Lbl.grid(row = 1, column = 0, sticky=tk.W)
+        
+        step2Lbl = ttk.Label(self.tab3, text = 'Step 2: You will be prompted to select a model. Only .pt (PyTorch) files are accepted', font = standardtab3LblFont)
+        step2Lbl.grid(row = 2, column = 0, sticky=tk.W)
+        
+        step3Lbl = ttk.Label(self.tab3, text = 'Step 3: Next, select an input text file. The file should be in Filipino language. Only .txt files are accepted', font = standardtab3LblFont)
+        step3Lbl.grid(row = 3, column = 0, sticky=tk.W)
+        
+        step4Lbl = ttk.Label(self.tab3, text = 'Step 4: Enter the name of the output file', font = standardtab3LblFont)
+        step4Lbl.grid(row = 4, column = 0, sticky=tk.W)
+        
+        spaceLbl = ttk.Label(self.tab3, text = ' ')
+        spaceLbl.grid(row = 5, column = 0, sticky = tk.W)
+        
+        evalInstructionLbl = ttk.Label(self.tab3, text = 'Evaluation phase', font = standardtab3LblFont)
+        evalInstructionLbl.grid(row = 6, column = 0, sticky = tk.W)
+        
+        stepE1Lbl = ttk.Label(self.tab3, text = 'Step 1: Click the upload button', font = standardtab3LblFont)
+        stepE1Lbl.grid(row = 7, column = 0, sticky = tk.W)
+        
+        stepE2Lbl = ttk.Label(self.tab3, text = 'Step 2: Select the reference text file. Only .txt files are accepted', font = standardtab3LblFont)
+        stepE2Lbl.grid(row = 8, column = 0, sticky = tk.W)
+        
+        stepE3Lbl = ttk.Label(self.tab3, text = 'Step 3: Select the candidate text file. Only .txt files are accepted', font = standardtab3LblFont)
+        stepE3Lbl.grid(row = 9, column = 0, sticky = tk.W)
+        
+        stepE4Lbl = ttk.Label(self.tab3, text = 'Step 4: The scores along with other information are now displayed. Click the next button to \nevaluate the next line until the end of the text file', font = standardtab3LblFont)
+        stepE4Lbl.grid(row = 10, column = 0, sticky = tk.W)
+        
+        
         
         self.root.mainloop()
+        
+        
+        
+        
         
         
             

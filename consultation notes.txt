@@ -1,4 +1,18 @@
-1. Line graph
+1. Line graph DONE
 2. Not resizable window DONE
-3. Label what text file format
-4. Put POS tags below each text
+3. Label what text file format DONE
+4. Put POS tags below each text DONE
+
+Use four  small text areas instead of two large ones on tab 2
+
+Might need unicode
+
+01/26/2023
+1. 
+2. Add Reminder that user should press next button until the end of text file (refer to number 5)
+3. Change label to Structure sensitive Bleu score DONE
+4. Balance label frame size to other frames
+5. Add users manual to third tab DONE?
+6. Entry box for output file 
+7. Indicate number of lines
+8. Removed show graph button DONE
