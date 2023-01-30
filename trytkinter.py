@@ -16,6 +16,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
 NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 import numpy
+from tkinter.simpledialog import askstring as AS
 
 def getPOS(inputtext):
     c = 0
@@ -267,14 +268,16 @@ class Display:
         # self.btn_train.grid(row=1, column = 1)
         
         def onmtTranslate(textwidget, secondtextwidget):
-            tk.messagebox.showinfo("Reminder",  "Only .txt files are accepted")
+            tk.messagebox.showinfo("",  "Select a model pytorch file")
             modelDir = fd.askopenfilename()
             modelPt = os.path.split(modelDir)[1]
             
+            tk.messagebox.showinfo("",  "Select a text file written in Tagalog")
             origDir = fd.askopenfilename()
             origTl = os.path.split(origDir)[1]
-                        
-            sysCmd = os.system(r'onmt_translate -model ' + modelPt + ' -src ' + origTl + ' -output candOut.txt -verbose')
+                      
+            outputFilename = AS('File name', 'What would you like to name your output file?')  
+            sysCmd = os.system(r'onmt_translate -model ' + modelPt + ' -src ' + origTl + ' -output ' + outputFilename + '.txt -verbose')
             
             with open(origTl,'r') as file:
                 origLines = file.read()
@@ -346,17 +349,25 @@ class Display:
         self.calTextarea = st.ScrolledText(self.tab2, font = ("Times New Roman",7))
         self.calTextarea.grid(row=2,column=1, rowspan=4)
         
-        self.logFr = tk.Frame(self.tab2)
+        self.logFr = tk.Frame(self.tab2, height = 317, width = 580)
         self.logFr.grid(row=0, column = 0, sticky=tk.W)
         ##eval data labels
-        self.bleu_lbl = ttk.Label(self.logFr, text = 'standard bleu score: ')
-        self.bleu_lbl.grid(row = 0, column = 0, sticky=tk.W)
-        self.gross_lbl = ttk.Label(self.logFr, text = 'Structure sensitive Bleu score: ')
-        self.gross_lbl.grid(row = 1, column = 0, sticky=tk.W)
-        self.corr_lbl = ttk.Label(self.logFr, text = f'Correctly placed POS tags:')
-        self.corr_lbl.grid(row = 2, column= 0, sticky=tk.W )
-        self.compare_lbl = ttk.Label(self.logFr, text = f'Number of correctly placed tags:')
-        self.compare_lbl.grid(row = 3, column =0, sticky=tk.W)
+        self.numOfLines = 0
+        self.lineCounter = 1
+        
+        standardtab2LabelFont = 'Times New Roman',14
+        self.linesLbl = ttk.Label(self.logFr, text = 'line ? of ?', font=standardtab2LabelFont)
+        self.linesLbl.grid(row = 0, column = 0, sticky=tk.W)
+        self.bleu_lbl = ttk.Label(self.logFr, text = 'standard bleu score: ', font=standardtab2LabelFont)
+        self.bleu_lbl.grid(row = 1, column = 0, sticky=tk.W)
+        self.gross_lbl = ttk.Label(self.logFr, text = 'Structure sensitive Bleu score: ', font=standardtab2LabelFont)
+        self.gross_lbl.grid(row = 2, column = 0, sticky=tk.W)
+        self.corr_lbl = ttk.Label(self.logFr, text = f'Correctly placed POS tags:', font=standardtab2LabelFont)
+        self.corr_lbl.grid(row = 3, column= 0, sticky=tk.W )
+        self.compare_lbl = ttk.Label(self.logFr, text = f'Number of correctly placed tags:', font=standardtab2LabelFont)
+        self.compare_lbl.grid(row = 4, column =0, sticky=tk.W)
+        
+        
         
         ##button frame
         self.buttonFr = tk.Frame(self.tab2)
@@ -405,22 +416,29 @@ class Display:
         
         self.candLineList = []
         def Upload(textwidgets):
-            tk.messagebox.showinfo("Reminder",  "Only .txt files are accepted")
+            tk.messagebox.showinfo("",  "Select a reference text file")
             
             refDir = fd.askopenfilename()
             refFileName = os.path.split(refDir)[1]
             
             with open(refFileName, 'r') as reFileLines:
+                c = 0
                 for line in reFileLines:
                     self.refLineList.append(line)
+                    c+=1
+                self.numOfLines = c
                     
             textwidgets[0].configure(state='normal')
             refPOS = str(getPOS(self.nlp(self.refLineList[0])))
             textwidgets[0].insert(tk.INSERT,self.refLineList[0] + "\n " + refPOS)
             textwidgets[0].configure(state='disabled')
             
+            tk.messagebox.showinfo("",  "Select a candidate text file")
+            
             candDir = fd.askopenfilename()
             candFileName = os.path.split(candDir)[1]
+            
+            
             
             with open(candFileName,'r') as candFileLines:
                 for line in candFileLines:
@@ -430,6 +448,8 @@ class Display:
             candPOS = str(getPOS(self.nlp(self.candLineList[0])))
             textwidgets[1].insert(tk.INSERT,self.candLineList[0] + "\n " + candPOS)
             textwidgets[1].configure(state='disabled')
+            
+            self.linesLbl["text"] = 'line 1 of ' + str(self.numOfLines)
             
             bleuSc = sentence_bleu(list(self.refLineList[0]), list(self.candLineList[0]), weights=(1, 0, 0, 0))
             format_bleuSc = "{:.2f}".format(bleuSc)
@@ -469,43 +489,52 @@ class Display:
             plt.draw()
             
         def nextEval():
-            
-            self.counter+=1
-            self.refTextarea.configure(state='normal')
-            self.refTextarea.delete('1.0',tk.END)
-            refPOS = str(getPOS(self.nlp(self.refLineList[self.counter])))
-            self.refTextarea.insert(tk.INSERT,self.refLineList[self.counter] + "\n" + refPOS)
-            self.refTextarea.configure(state='disable')
-            
-            self.calTextarea.configure(state='normal')
-            self.calTextarea.delete('1.0',tk.END)
-            candPOS = str(getPOS(self.nlp(self.candLineList[self.counter])))
-            self.calTextarea.insert(tk.INSERT,self.candLineList[self.counter] + "\n" + candPOS)
-            self.calTextarea.configure(state='disabled')
+            try:
+                self.lineCounter+=1
+                self.counter+=1
+                self.refTextarea.configure(state='normal')
+                self.refTextarea.delete('1.0',tk.END)
+                refPOS = str(getPOS(self.nlp(self.refLineList[self.counter])))
+                self.refTextarea.insert(tk.INSERT,self.refLineList[self.counter] + "\n" + refPOS)
+                self.refTextarea.configure(state='disable')
+                
+                self.calTextarea.configure(state='normal')
+                self.calTextarea.delete('1.0',tk.END)
+                candPOS = str(getPOS(self.nlp(self.candLineList[self.counter])))
+                self.calTextarea.insert(tk.INSERT,self.candLineList[self.counter] + "\n" + candPOS)
+                self.calTextarea.configure(state='disabled')
 
-            bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
-            format_bleuSc = "{:.2f}".format(bleuSc)
-            self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
-            self.bleuY.append(bleuSc)
-            
-            grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
-            format_grossSc = "{:.2f}".format(grossSc['grs'])
-            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
-            self.grossY.append(grossSc['grs'])
-            
-            self.xCoord.append(self.xCoordCounter)
-            self.xCoordCounter+=1
-            
-            # a = self.f.add_subplot(111)
-            # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
-            # a.plot(self.xCoord, self.grossY, label = "gross Score")
-            # a.legend()
-            
-            self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
+                self.linesLbl["text"] = f'line {str(self.lineCounter)} of {str(self.numOfLines)}'  
+                bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
+                format_bleuSc = "{:.2f}".format(bleuSc)
+                self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
+                self.bleuY.append(bleuSc)
+                
+                grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
+                format_grossSc = "{:.2f}".format(grossSc['grs'])
+                self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
+                self.grossY.append(grossSc['grs'])
+                
+                self.xCoord.append(self.xCoordCounter)
+                self.xCoordCounter+=1
+                
+                # a = self.f.add_subplot(111)
+                # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
+                # a.plot(self.xCoord, self.grossY, label = "gross Score")
+                # a.legend()
+                
+                self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
 
-            self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter]))
+                self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter]))
+                
+                showGraph()
+            except IndexError:
+                self.calTextarea.configure(state='normal')
+                self.calTextarea.delete('1.0',tk.END)
+                self.calTextarea.configure(state='disable')
+                tk.messagebox.showinfo("!",  "Reached end of text file")
+        
             
-            showGraph()
         self.evalBtn = ttk.Button(self.buttonFr, text = "Next", command=lambda: nextEval())
         self.evalBtn.grid(row=1,column = 0)
         
