@@ -163,7 +163,9 @@ Collab files/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-model_step_42000.pt 
+model_step_42000.pt
+model_step_47000.pt 
 model_step_49000.pt 
 model_step_50000.pt
 model_step_61000.pt
+model_step_68000.pt

@@ -15,4 +15,12 @@ Might need unicode
 5. Add users manual to third tab DONE?
 6. Entry box for output file DONE
 7. Indicate number of lines DONE
-8. Removed show graph button DONE
+8. Removed show graph button DONE 
+9. limited file types available in file upload DONE
+
+2/10
+1. Upload files first before translating
+2. buffering logo
+3. Overall/averages result
+4. Should be per sentence
+5. Error message title

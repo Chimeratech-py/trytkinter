@@ -18,6 +18,15 @@ from matplotlib.figure import Figure
 import numpy
 from tkinter.simpledialog import askstring as AS
 
+def slicePersonal(li):
+    if len(li) > 4:
+        firstLi = li[0:4]
+        secondLi = li[4:]
+        
+        return str(firstLi) + " \n" + str(secondLi)
+    else:
+        return str(li)
+
 def getPOS(inputtext):
     c = 0
     POSlist = []
@@ -269,11 +278,11 @@ class Display:
         
         def onmtTranslate(textwidget, secondtextwidget):
             tk.messagebox.showinfo("",  "Select a model pytorch file")
-            modelDir = fd.askopenfilename()
+            modelDir = fd.askopenfilename(filetypes=[("Pytorch files", "*.pt")])
             modelPt = os.path.split(modelDir)[1]
             
             tk.messagebox.showinfo("",  "Select a text file written in Tagalog")
-            origDir = fd.askopenfilename()
+            origDir = fd.askopenfilename(filetypes=[("Tagalog text files", "*.tl")])
             origTl = os.path.split(origDir)[1]
                       
             outputFilename = AS('File name', 'What would you like to name your output file?')  
@@ -282,8 +291,13 @@ class Display:
             with open(origTl,'r') as file:
                 origLines = file.read()
                 
-            with open('candOut.txt','r') as file:
+            with open(outputFilename + '.txt','r') as file:
                 transLines = file.read()
+                
+            transLines = transLines.replace('<unk>', 'unknown')
+            
+            with open(outputFilename + '.txt','w') as file:
+                file.write(transLines)
                 
             textwidget.configure(state='normal')
             textwidget.delete('1.0',tk.END)
@@ -355,7 +369,7 @@ class Display:
         self.numOfLines = 0
         self.lineCounter = 1
         
-        standardtab2LabelFont = 'Times New Roman',14
+        standardtab2LabelFont = 'Times New Roman',11
         self.linesLbl = ttk.Label(self.logFr, text = 'line ? of ?', font=standardtab2LabelFont)
         self.linesLbl.grid(row = 0, column = 0, sticky=tk.W)
         self.bleu_lbl = ttk.Label(self.logFr, text = 'standard bleu score: ', font=standardtab2LabelFont)
@@ -418,7 +432,7 @@ class Display:
         def Upload(textwidgets):
             tk.messagebox.showinfo("",  "Select a reference text file")
             
-            refDir = fd.askopenfilename()
+            refDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
             refFileName = os.path.split(refDir)[1]
             
             with open(refFileName, 'r') as reFileLines:
@@ -435,7 +449,7 @@ class Display:
             
             tk.messagebox.showinfo("",  "Select a candidate text file")
             
-            candDir = fd.askopenfilename()
+            candDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
             candFileName = os.path.split(candDir)[1]
             
             
@@ -464,7 +478,8 @@ class Display:
             self.xCoord.append(self.xCoordCounter)
             self.xCoordCounter+=1
             
-            self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
+            correctlyPOSstr = slicePersonal(grossSc['correctly placed tags'])                                                        
+            self.corr_lbl["text"] = f'Correctly placed POS tags:' + correctlyPOSstr
 
             self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0]))
 
@@ -523,7 +538,8 @@ class Display:
                 # a.plot(self.xCoord, self.grossY, label = "gross Score")
                 # a.legend()
                 
-                self.corr_lbl["text"] = f'Correctly placed POS tags:' + str(grossSc['correctly placed tags'])
+                correctlyPOSstr = slicePersonal(grossSc['correctly placed tags'])
+                self.corr_lbl["text"] = f'Correctly placed POS tags:' + correctlyPOSstr
 
                 self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter]))
                 
