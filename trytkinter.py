@@ -17,6 +17,7 @@ NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 import numpy
 from tkinter.simpledialog import askstring as AS
+from threading import Thread
 
 def slicePersonal(li):
     if len(li) > 4:
@@ -276,21 +277,44 @@ class Display:
         # self.btn_train = ttk.Button(self.tab1, text="Train", command=lambda: onmtTrain(self.text_area))
         # self.btn_train.grid(row=1, column = 1)
         
-        def onmtTranslate(textwidget, secondtextwidget):
-            tk.messagebox.showinfo("",  "Select a model pytorch file")
+        self.modelPtFile = None
+        self.origTlFile = None
+        
+        def updTrans(textwidget):
+            tk.messagebox.showinfo("Upload file",  "Select a model pytorch file")
             modelDir = fd.askopenfilename(filetypes=[("Pytorch files", "*.pt")])
-            modelPt = os.path.split(modelDir)[1]
+            self.modelPtFile = os.path.split(modelDir)[1]
             
-            tk.messagebox.showinfo("",  "Select a text file written in Tagalog")
+            tk.messagebox.showinfo("Upload file",  "Select a text file written in Tagalog")
             origDir = fd.askopenfilename(filetypes=[("Tagalog text files", "*.tl")])
-            origTl = os.path.split(origDir)[1]
-                      
-            outputFilename = AS('File name', 'What would you like to name your output file?')  
-            sysCmd = os.system(r'onmt_translate -model ' + modelPt + ' -src ' + origTl + ' -output ' + outputFilename + '.txt -verbose')
+            self.origTlFile = os.path.split(origDir)[1]
             
-            with open(origTl,'r') as file:
+            with open(self.origTlFile,'r') as file:
                 origLines = file.read()
-                
+            
+            textwidget.configure(state='normal')
+            textwidget.delete('1.0',tk.END)
+            textwidget.insert(tk.INSERT, origLines)
+            textwidget.configure(state='disabled')
+            
+        def onmtTranslate(pytorchFile,tlFile,outputFilename):
+            os.system(r'onmt_translate -model ' + pytorchFile + ' -src ' + tlFile + ' -output ' + outputFilename + '.txt -verbose')
+            
+        def run_function(name, func,pytorchFile,tlFile,outputFilename):
+            popup = tk.Toplevel()
+            tk.Label(popup, text="File being translated").grid(row=0,column=0)
+
+            processing_bar = ttk.Progressbar(popup, orient='horizontal', mode='indeterminate')
+            processing_bar.grid(row=1,column=0)
+            
+            processing_bar.start(interval=10)
+            print(name, 'started')
+            func(pytorchFile,tlFile,outputFilename)
+            processing_bar.stop()
+            print(name, 'stopped')
+            
+            popup.destroy()
+            
             with open(outputFilename + '.txt','r') as file:
                 transLines = file.read()
                 
@@ -299,18 +323,29 @@ class Display:
             with open(outputFilename + '.txt','w') as file:
                 file.write(transLines)
                 
-            textwidget.configure(state='normal')
-            textwidget.delete('1.0',tk.END)
-            textwidget.insert(tk.INSERT, origLines)
-            textwidget.configure(state='disabled')
+            self.translated_text_area.configure(state='normal')
+            self.translated_text_area.delete('1.0',tk.END)
+            self.translated_text_area.insert(tk.INSERT, transLines)
+            self.translated_text_area.configure(state='disabled')
             
-            secondtextwidget.configure(state='normal')
-            secondtextwidget.delete('1.0',tk.END)
-            secondtextwidget.insert(tk.INSERT, transLines)
-            secondtextwidget.configure(state='disabled')
+        def run_thread(name, func,pytorchFile,tlFile,outputFilename):
+            Thread(target=run_function, args=(name, func,pytorchFile,tlFile,outputFilename)).start()
             
-        self.btn_translate = ttk.Button(self.tab1, text="Translate", command=lambda:onmtTranslate(self.text_area,self.translated_text_area))
-        self.btn_translate.grid(row=2, column = 1, pady=20,sticky=tk.E)
+        def translate_clicked(textwidget,pytorchFile,tlFile):          
+            outputFilename = AS('File name', 'What would you like to name your output file?')  
+            
+            run_thread('translate', onmtTranslate, pytorchFile,tlFile,outputFilename)
+            #os.system(r'onmt_translate -model ' + pytorchFile + ' -src ' + tlFile + ' -output ' + outputFilename + '.txt -verbose')
+                
+            
+        
+        self.button_tab1_Fr = tk.Frame(self.tab1)
+        self.button_tab1_Fr.grid(row=2,column=1, pady=20,sticky=tk.E)
+        
+        self.btn_upload_tab1 = ttk.Button(self.button_tab1_Fr, text = "Upload", command=lambda:updTrans(self.text_area))
+        self.btn_upload_tab1.grid(row=0,column=0)
+        self.btn_translate = ttk.Button(self.button_tab1_Fr, text="Translate", command=lambda: translate_clicked(self.translated_text_area,self.modelPtFile,self.origTlFile))
+        self.btn_translate.grid(row=0,column=1)
         
         ##2ND TAB
         ##FOR EVALUATION
@@ -370,16 +405,20 @@ class Display:
         self.lineCounter = 1
         
         standardtab2LabelFont = 'Times New Roman',11
-        self.linesLbl = ttk.Label(self.logFr, text = 'line ? of ?', font=standardtab2LabelFont)
+        self.linesLbl = ttk.Label(self.logFr, text = 'Line ? of ?', font=standardtab2LabelFont)
         self.linesLbl.grid(row = 0, column = 0, sticky=tk.W)
-        self.bleu_lbl = ttk.Label(self.logFr, text = 'standard bleu score: ', font=standardtab2LabelFont)
+        self.bleu_lbl = ttk.Label(self.logFr, text = 'Standard bleu score: ', font=standardtab2LabelFont)
         self.bleu_lbl.grid(row = 1, column = 0, sticky=tk.W)
+        self.avgBleu_lbl = ttk.Label(self.logFr, text = 'Average bleu score so far: ', font=standardtab2LabelFont)
+        self.avgBleu_lbl.grid(row = 2, column=0,sticky=tk.W)
         self.gross_lbl = ttk.Label(self.logFr, text = 'Structure sensitive Bleu score: ', font=standardtab2LabelFont)
-        self.gross_lbl.grid(row = 2, column = 0, sticky=tk.W)
+        self.gross_lbl.grid(row = 3, column = 0, sticky=tk.W)
+        self.avgStruct_lbl = ttk.Label(self.logFr,text = 'Average Structure sensitive Bleu score so far: ', font=standardtab2LabelFont)
+        self.avgStruct_lbl.grid(row=4,column=0,sticky=tk.W)
         self.corr_lbl = ttk.Label(self.logFr, text = f'Correctly placed POS tags:', font=standardtab2LabelFont)
-        self.corr_lbl.grid(row = 3, column= 0, sticky=tk.W )
+        self.corr_lbl.grid(row = 5, column= 0, sticky=tk.W )
         self.compare_lbl = ttk.Label(self.logFr, text = f'Number of correctly placed tags:', font=standardtab2LabelFont)
-        self.compare_lbl.grid(row = 4, column =0, sticky=tk.W)
+        self.compare_lbl.grid(row = 6, column =0, sticky=tk.W)
         
         
         
@@ -430,7 +469,7 @@ class Display:
         
         self.candLineList = []
         def Upload(textwidgets):
-            tk.messagebox.showinfo("",  "Select a reference text file")
+            tk.messagebox.showinfo("Upload file",  "Select a reference text file")
             
             refDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
             refFileName = os.path.split(refDir)[1]
@@ -447,7 +486,7 @@ class Display:
             textwidgets[0].insert(tk.INSERT,self.refLineList[0] + "\n " + refPOS)
             textwidgets[0].configure(state='disabled')
             
-            tk.messagebox.showinfo("",  "Select a candidate text file")
+            tk.messagebox.showinfo("Upload file",  "Select a candidate text file")
             
             candDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
             candFileName = os.path.split(candDir)[1]
@@ -469,11 +508,13 @@ class Display:
             format_bleuSc = "{:.2f}".format(bleuSc)
             self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
             self.bleuY.append(bleuSc)
+            self.avgBleu_lbl["text"] = 'Average bleu score so far: ' + str(format_bleuSc)
             
             grossSc = structure_evaluation(self.nlp(self.refLineList[0]), self.nlp(self.candLineList[0]),bleuSc)
             format_grossSc = "{:.2f}".format(grossSc['grs'])
             self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
             self.grossY.append(grossSc['grs'])
+            self.avgStruct_lbl["text"] = 'Average Structure sensitive Bleu score so far: ' + str(format_grossSc)
             
             self.xCoord.append(self.xCoordCounter)
             self.xCoordCounter+=1
@@ -525,10 +566,16 @@ class Display:
                 self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
                 self.bleuY.append(bleuSc)
                 
+                avgBleu = "{:.2f}".format(sum(self.bleuY)/len(self.bleuY)) 
+                self.avgBleu_lbl["text"] = 'Average bleu score so far: ' + str(avgBleu)
+                
                 grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
                 format_grossSc = "{:.2f}".format(grossSc['grs'])
                 self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
                 self.grossY.append(grossSc['grs'])
+                
+                avgStructBleu = "{:.2f}".format(sum(self.grossY)/len(self.grossY))
+                self.avgStruct_lbl["text"] = 'Average Structure sensitive Bleu score so far: ' + str(avgStructBleu)
                 
                 self.xCoord.append(self.xCoordCounter)
                 self.xCoordCounter+=1
@@ -548,14 +595,90 @@ class Display:
                 self.calTextarea.configure(state='normal')
                 self.calTextarea.delete('1.0',tk.END)
                 self.calTextarea.configure(state='disable')
-                tk.messagebox.showinfo("!",  "Reached end of text file")
+                tk.messagebox.showinfo("information",  "Reached end of text file")
         
             
         self.evalBtn = ttk.Button(self.buttonFr, text = "Next", command=lambda: nextEval())
         self.evalBtn.grid(row=1,column = 0)
         
+        def skipLines():
+            try:
+                lineCounter = 0
+                bleuScoresList = []
+                structBleuScoresList = []
+                
+                AvgBleu = 0
+                AvgStructBleu = 0
+                
+                for i in range(len(self.refLineList)):
+                    bleuSc = sentence_bleu(list(self.refLineList[lineCounter]), list(self.candLineList[lineCounter]), weights=(1, 0, 0, 0))
+                    bleuScoresList.append(bleuSc)
+                    grossSc = structure_evaluation(self.nlp(self.refLineList[lineCounter]), self.nlp(self.candLineList[lineCounter]),bleuSc)
+                    structBleuScoresList.append(grossSc['grs'])
+                    
+                    lineCounter+=1
+                
+                AvgBleu = sum(bleuScoresList)/len(bleuScoresList)
+                AvgBleu = "{:.2f}".format(AvgBleu)
+                AvgStructBleu = sum(structBleuScoresList)/len(structBleuScoresList)
+                AvgStructBleu = "{:.2f}".format(AvgStructBleu)
+                
+                tk.messagebox.showinfo("Averages",  f"Bleu: {AvgBleu} \nStructure Sensitive Bleu: {AvgStructBleu}")
+            except FileNotFoundError:
+                tk.messagebox.showerror("Error","No files uploaded")             
+            
+        #self.skipBtn = ttk.Button(self.buttonFr, text = "Show average", command=lambda: skipLines())
+        #self.skipBtn.grid(row=2,column=0)
         
+        def skipToLast():
+            while self.counter < len(self.refLineList):
+                bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
+                self.bleuY.append(bleuSc)
+                
+                grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
+                self.grossY.append(grossSc['grs'])
+                
+                self.xCoord.append(self.xCoordCounter)
+                self.xCoordCounter+=1
+
+                self.counter+=1
+            
+            self.refTextarea.configure(state='normal')
+            self.refTextarea.delete('1.0',tk.END)
+            refPOS = str(getPOS(self.nlp(self.refLineList[-1])))
+            self.refTextarea.insert(tk.INSERT,self.refLineList[-1] + "\n" + refPOS)
+            self.refTextarea.configure(state='disable')
+            
+            self.calTextarea.configure(state='normal')
+            self.calTextarea.delete('1.0',tk.END)
+            candPOS = str(getPOS(self.nlp(self.candLineList[-1])))
+            self.calTextarea.insert(tk.INSERT,self.candLineList[-1] + "\n" + candPOS)
+            self.calTextarea.configure(state='disabled')
+            
+            self.linesLbl["text"] = f'line {str(self.numOfLines)} of {str(self.numOfLines)}'  
+            
+            bleuSc = sentence_bleu(list(self.refLineList[-1]), list(self.candLineList[-1]), weights=(1, 0, 0, 0))
+            format_bleuSc = "{:.2f}".format(bleuSc)
+            self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
+            
+            avgBleu = "{:.2f}".format(sum(self.bleuY)/len(self.bleuY)) 
+            self.avgBleu_lbl["text"] = 'Average bleu score so far: ' + str(avgBleu)
+                
+            grossSc = structure_evaluation(self.nlp(self.refLineList[-1]), self.nlp(self.candLineList[-1]),bleuSc)
+            format_grossSc = "{:.2f}".format(grossSc['grs'])
+            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
+            
+            avgStructBleu = "{:.2f}".format(sum(self.grossY)/len(self.grossY))
+            self.avgStruct_lbl["text"] = 'Average Structure sensitive Bleu score so far: ' + str(avgStructBleu)
+                
+            correctlyPOSstr = slicePersonal(grossSc['correctly placed tags'])
+            self.corr_lbl["text"] = f'Correctly placed POS tags:' + correctlyPOSstr
+
+            self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[-1]),self.nlp(self.candLineList[-1]))
+            showGraph()
         
+        self.lastBtn = ttk.Button(self.buttonFr, text="Skip to Last", command = lambda: skipToLast())
+        self.lastBtn.grid(row=3,column=0)
         
             
         ##self.reftxt = ttk.Label(self.tab2, text = self.ref_being_evaluated)

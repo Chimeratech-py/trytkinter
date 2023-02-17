@@ -19,8 +19,10 @@ Might need unicode
 9. limited file types available in file upload DONE
 
 2/10
-1. Upload files first before translating
-2. buffering logo
-3. Overall/averages result
-4. Should be per sentence
-5. Error message title
+1. Upload files first before translating DONE
+2. buffering logo DONE
+3. Overall/averages result (Add average so far to label frame) DONE
+4. Error message title DONE
+
+2/17
+1. Indicate that translate first before evaluating
