@@ -297,6 +297,9 @@ class Display:
             textwidget.insert(tk.INSERT, origLines)
             textwidget.configure(state='disabled')
             
+            if self.modelPtFile and self.origTlFile:
+                self.btn_translate["state"] = tk.NORMAL
+            
         def onmtTranslate(pytorchFile,tlFile,outputFilename):
             os.system(r'onmt_translate -model ' + pytorchFile + ' -src ' + tlFile + ' -output ' + outputFilename + '.txt -verbose')
             
@@ -334,7 +337,14 @@ class Display:
         def translate_clicked(textwidget,pytorchFile,tlFile):          
             outputFilename = AS('File name', 'What would you like to name your output file?')  
             
-            run_thread('translate', onmtTranslate, pytorchFile,tlFile,outputFilename)
+            outputFilename = outputFilename.replace(' ','-')
+            if outputFilename == '':
+                tk.messagebox.showerror("No name entered",  "No name entered. Please try again.")
+            else:
+                
+                run_thread('translate', onmtTranslate, pytorchFile,tlFile,outputFilename)
+                
+            
             #os.system(r'onmt_translate -model ' + pytorchFile + ' -src ' + tlFile + ' -output ' + outputFilename + '.txt -verbose')
                 
             
@@ -346,7 +356,7 @@ class Display:
         self.btn_upload_tab1.grid(row=0,column=0)
         self.btn_translate = ttk.Button(self.button_tab1_Fr, text="Translate", command=lambda: translate_clicked(self.translated_text_area,self.modelPtFile,self.origTlFile))
         self.btn_translate.grid(row=0,column=1)
-        
+        self.btn_translate["state"] = tk.DISABLED
         ##2ND TAB
         ##FOR EVALUATION
         ##STAGE
@@ -468,7 +478,17 @@ class Display:
         self.grossY = []
         
         self.candLineList = []
+        
         def Upload(textwidgets):
+            
+            self.refLineList = []
+            self.xCoord = []
+            self.xCoordCounter = 1
+            self.bleuY = []
+            self.grossY = []
+            self.candLineList = []
+            self.lineCounter = 1
+            
             tk.messagebox.showinfo("Upload file",  "Select a reference text file")
             
             refDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
@@ -482,6 +502,7 @@ class Display:
                 self.numOfLines = c
                     
             textwidgets[0].configure(state='normal')
+            textwidgets[0].delete("1.0","end")
             refPOS = str(getPOS(self.nlp(self.refLineList[0])))
             textwidgets[0].insert(tk.INSERT,self.refLineList[0] + "\n " + refPOS)
             textwidgets[0].configure(state='disabled')
@@ -498,6 +519,7 @@ class Display:
                     self.candLineList.append(line)
 
             textwidgets[1].configure(state='normal')
+            textwidgets[1].delete("1.0","end")
             candPOS = str(getPOS(self.nlp(self.candLineList[0])))
             textwidgets[1].insert(tk.INSERT,self.candLineList[0] + "\n " + candPOS)
             textwidgets[1].configure(state='disabled')
@@ -524,6 +546,8 @@ class Display:
 
             self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0]))
 
+            self.evalBtn["state"] = tk.NORMAL
+            self.lastBtn["state"] = tk.NORMAL
             
             # a = self.f.add_subplot(111)
             # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
@@ -599,7 +623,9 @@ class Display:
         
             
         self.evalBtn = ttk.Button(self.buttonFr, text = "Next", command=lambda: nextEval())
+        self.evalBtn["state"] = tk.DISABLED
         self.evalBtn.grid(row=1,column = 0)
+        
         
         def skipLines():
             try:
@@ -678,6 +704,7 @@ class Display:
             showGraph()
         
         self.lastBtn = ttk.Button(self.buttonFr, text="Skip to Last", command = lambda: skipToLast())
+        self.lastBtn["state"] = tk.DISABLED
         self.lastBtn.grid(row=3,column=0)
         
             
@@ -710,41 +737,100 @@ class Display:
         self.tabControl.add(self.tab3, text="Instructions")
         
         standardtab3LblFont = 'Times New Roman', 12
+        
+        remindLbl = ttk.Label(self.tab3, text = 'Reminder: Make sure that a translated text file and reference text file are both already present', font = standardtab3LblFont)
+        remindLbl.grid(row = 0, column = 0, sticky=tk.W)
+        
+        remindLbl2 = ttk.Label(self.tab3, text = ' before proceeding to the evaluation phase', font = standardtab3LblFont)
+        remindLbl2.grid(row = 1, column = 0, sticky=tk.W)
+        
         transInstructionLbl = ttk.Label(self.tab3, text = 'Translation phase', font = standardtab3LblFont)
-        transInstructionLbl.grid(row = 0, column = 0, sticky=tk.W)
+        transInstructionLbl.grid(row = 2, column = 0, sticky=tk.W)
         
         step1Lbl = ttk.Label(self.tab3, text = 'Step 1: Click the translate button', font = standardtab3LblFont)
-        step1Lbl.grid(row = 1, column = 0, sticky=tk.W)
+        step1Lbl.grid(row = 3, column = 0, sticky=tk.W)
         
         step2Lbl = ttk.Label(self.tab3, text = 'Step 2: You will be prompted to select a model. Only .pt (PyTorch) files are accepted', font = standardtab3LblFont)
-        step2Lbl.grid(row = 2, column = 0, sticky=tk.W)
+        step2Lbl.grid(row = 4, column = 0, sticky=tk.W)
         
         step3Lbl = ttk.Label(self.tab3, text = 'Step 3: Next, select an input text file. The file should be in Filipino language. Only .txt files are accepted', font = standardtab3LblFont)
-        step3Lbl.grid(row = 3, column = 0, sticky=tk.W)
+        step3Lbl.grid(row = 5, column = 0, sticky=tk.W)
         
         step4Lbl = ttk.Label(self.tab3, text = 'Step 4: Enter the name of the output file', font = standardtab3LblFont)
-        step4Lbl.grid(row = 4, column = 0, sticky=tk.W)
+        step4Lbl.grid(row = 6, column = 0, sticky=tk.W)
         
         spaceLbl = ttk.Label(self.tab3, text = ' ')
-        spaceLbl.grid(row = 5, column = 0, sticky = tk.W)
+        spaceLbl.grid(row = 7, column = 0, sticky = tk.W)
         
         evalInstructionLbl = ttk.Label(self.tab3, text = 'Evaluation phase', font = standardtab3LblFont)
-        evalInstructionLbl.grid(row = 6, column = 0, sticky = tk.W)
+        evalInstructionLbl.grid(row = 8, column = 0, sticky = tk.W)
         
         stepE1Lbl = ttk.Label(self.tab3, text = 'Step 1: Click the upload button', font = standardtab3LblFont)
-        stepE1Lbl.grid(row = 7, column = 0, sticky = tk.W)
+        stepE1Lbl.grid(row = 9, column = 0, sticky = tk.W)
         
         stepE2Lbl = ttk.Label(self.tab3, text = 'Step 2: Select the reference text file. Only .txt files are accepted', font = standardtab3LblFont)
-        stepE2Lbl.grid(row = 8, column = 0, sticky = tk.W)
+        stepE2Lbl.grid(row = 10, column = 0, sticky = tk.W)
         
         stepE3Lbl = ttk.Label(self.tab3, text = 'Step 3: Select the candidate text file. Only .txt files are accepted', font = standardtab3LblFont)
-        stepE3Lbl.grid(row = 9, column = 0, sticky = tk.W)
+        stepE3Lbl.grid(row = 11, column = 0, sticky = tk.W)
         
         stepE4Lbl = ttk.Label(self.tab3, text = 'Step 4: The scores along with other information are now displayed. Click the next button to \nevaluate the next line until the end of the text file', font = standardtab3LblFont)
-        stepE4Lbl.grid(row = 10, column = 0, sticky = tk.W)
+        stepE4Lbl.grid(row = 12, column = 0, sticky = tk.W)
         
+        ##4th tab
+        ##POS tags list
         
+        self.tab4 = ttk.Frame(self.tabControl)
+        self.tabControl.add(self.tab4, text="POS labels")
         
+        self.posLabelFr = tk.Frame(self.tab4)
+        self.posLabelFr.grid(row=0,column=0,padx=20,pady=20)
+        
+        posHeaderLbl = ttk.Label(self.posLabelFr, text = 'POS', font = standardtab3LblFont)
+        posHeaderLbl.grid(row = 0, column = 0)
+        
+        descHeaderLbl = ttk.Label(self.posLabelFr,text = 'DESCRIPTION', font = standardtab3LblFont)
+        descHeaderLbl.grid(row=0,column=1)
+        
+        exHeaderLbl = ttk.Label(self.posLabelFr,text = 'EXAMPLES', font = standardtab3LblFont)
+        exHeaderLbl.grid(row=0,column=2)
+        
+        tags_list = ['ADJ','ADP','ADV','AUX','CONJ','CCONJ','DET','INTJ','NOUN','NUM','PART','PRON','PROPN','PUNCT','SCONJ','SYM','VERB','X','SPACE']
+        desc_list = ['adjective','adposition','adverb','auxiliary','conjunction','coordinating conjunction','determiner','interjection','noun','numeral','particle','pronoun','proper noun','punctuation','subordinating conjunction','symbol','verb','other','space']
+        examples_list = ['*big, old, green','*in, to, during*','*very, where, there*'
+                         ,'	*is, has (done), will (do), should (do)*','	*and, or, but*','*and, or, but*','*a, an, the*','*psst, ouch, bravo, hello*','	*girl, cat, tree, air, beauty*','*1, 2017, one, seventy-seven, IV, MMXIV*'
+                         ,'*’s, not,*','	*I, you, he, she, myself, themselves, somebody*','	*Mary, John, London, NATO, HBO*','	*., (, ), ?*','*if, while, that*','*$, %, §, ©, +, −*','	*run, runs, running, eat, ate, eating*'
+                         ,'*sfpksdpsxmsa*',''
+                         ]
+
+        tags_rows = []
+        desc_rows = []
+        examples_rows = []
+        
+        tags_counter=0
+        tags_rowcount=1
+        for i in tags_list:
+            tags_rows.append(ttk.Label(self.posLabelFr, text=i, font = standardtab3LblFont))
+            tags_rows[tags_counter].grid(row=tags_rowcount,column=0)
+            tags_counter+=1
+            tags_rowcount+=1
+            
+        desc_counter=0
+        desc_rowcount=1
+        for i in desc_list:
+            desc_rows.append(ttk.Label(self.posLabelFr, text=i, font = standardtab3LblFont))
+            desc_rows[desc_counter].grid(row=desc_rowcount,column=1)
+            desc_counter+=1
+            desc_rowcount+=1
+            
+        examples_counter=0
+        examples_rowcount=1
+        for i in examples_list:
+            examples_rows.append(ttk.Label(self.posLabelFr, text=i, font = standardtab3LblFont))
+            examples_rows[examples_counter].grid(row=examples_rowcount,column=2)
+            examples_counter+=1
+            examples_rowcount+=1
+            
         self.root.mainloop()
         
         

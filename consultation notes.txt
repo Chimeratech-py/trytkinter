@@ -25,4 +25,10 @@ Might need unicode
 4. Error message title DONE
 
 2/17
-1. Indicate that translate first before evaluating
+1. Indicate that translate first before evaluation in instruction Tab DONE
+2. Add POS labels in 4th tab DONE
+
+Error handling
+1. In translation, FileNotFoundError when no files are uploaded DONE
+2. No filename entered for output file in translation phase DONE
+3. In evaluation phase, disable next and skip to last buttons if no files are uploaded DONE 
