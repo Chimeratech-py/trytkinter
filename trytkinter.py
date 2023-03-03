@@ -243,39 +243,65 @@ class Display:
         self.translated_text_area.grid(row = 1, column = 1)
         self.translated_text_area.configure(state='disabled')
         
-        def buildVocab(textwidget):
-            textwidget.configure(state='normal')
-            with open('vocabInfo.txt','r') as file:
-                t = file.read()
+        def vocab_clicked(func,samplesize):
+            Thread(target=run_vocab_thread,args=(func,samplesize)).start()
+        def onmtVocab(samplesize):
+            os.chdir('Collab files')
+            os.system(r'onmt_build_vocab -config en_tl.yaml -n_sample ' + str(samplesize))
+            # textwidget.configure(state='normal')
+            # with open('vocabInfo.txt','r') as file:
+            #     t = file.read()
             
-            time.sleep(5)
-            textwidget.insert(tk.INSERT, t)
+            # time.sleep(5)
+            # textwidget.insert(tk.INSERT, t)
             
-            textwidget.configure(state='disabled')
+            # textwidget.configure(state='disabled')
             
             # os.chdir('Collab files')
             # returned_value = os.system(r'cmd /k onmt_build_vocab -config en_tl.yaml -n_sample 10000')
             # print('returned value: ', returned_value)
             
-        # self.btn_vocab = ttk.Button(self.tab1,text="Build Vocab",command=lambda: buildVocab(self.text_area))
-        # self.btn_vocab.grid(row = 0, column= 1)
-        
-        def onmtTrain(textwidget):
-            textwidget.configure(state='normal')
-            beginProcessWindow = tk.Toplevel(self.tab2)
-            beginProcessWindow.geometry("750x250")
-            beginProcessWindow.title("Process")
-            tk.Label(beginProcessWindow, text = "Beginning process...", font=('Times New Roman',15)).place(x=150,y=80)
-            self.root.after(5000, beginProcessWindow.destroy)
+        def run_vocab_thread(func,samplesize):
+            popup = tk.Toplevel()
+            tk.Label(popup, text="Building the vocabulary").grid(row=0,column=0)
+
+            processing_bar = ttk.Progressbar(popup, orient='horizontal', mode='indeterminate')
+            processing_bar.grid(row=1,column=0)
             
-            textwidget.delete('1.0',tk.END)
-            textwidget.insert(tk.INSERT, 'training successful')
-            textwidget.configure(state='disabled')
+            processing_bar.start(interval=10)
+            print('vocab', 'started')
+            func(samplesize)
+            processing_bar.stop()
+            print('vocab', 'stopped')
+            
+            popup.destroy()
+        
+        def onmtTrain():            
+            try:
+                #ensure_command()
+                os.system(r'onmt_train -config en_tl.yaml')
+            except AttributeError:
+                tk.messagebox.showerror("Attribute error",  "Incompatible system requirements")
             ##returned_value = os.system(r'cmd /k onmt_train -config en_tl.yaml')
             ##print('returned value: ', returned_value)
         
-        # self.btn_train = ttk.Button(self.tab1, text="Train", command=lambda: onmtTrain(self.text_area))
-        # self.btn_train.grid(row=1, column = 1)
+        def train_clicked(func):
+            Thread(target=run_train_thread,args=[func]).start()
+        
+        def run_train_thread(func):
+            popup = tk.Toplevel()
+            tk.Label(popup, text="Training data").grid(row=0,column=0)
+
+            processing_bar = ttk.Progressbar(popup, orient='horizontal', mode='indeterminate')
+            processing_bar.grid(row=1,column=0)
+            
+            processing_bar.start(interval=10)
+            print('train', 'started')
+            func()
+            processing_bar.stop()
+            print('train', 'stopped')
+            
+            popup.destroy()
         
         self.modelPtFile = None
         self.origTlFile = None
@@ -303,7 +329,7 @@ class Display:
         def onmtTranslate(pytorchFile,tlFile,outputFilename):
             os.system(r'onmt_translate -model ' + pytorchFile + ' -src ' + tlFile + ' -output ' + outputFilename + '.txt -verbose')
             
-        def run_function(name, func,pytorchFile,tlFile,outputFilename):
+        def run_translate_thread(name, func,pytorchFile,tlFile,outputFilename):
             popup = tk.Toplevel()
             tk.Label(popup, text="File being translated").grid(row=0,column=0)
 
@@ -332,7 +358,7 @@ class Display:
             self.translated_text_area.configure(state='disabled')
             
         def run_thread(name, func,pytorchFile,tlFile,outputFilename):
-            Thread(target=run_function, args=(name, func,pytorchFile,tlFile,outputFilename)).start()
+            Thread(target=run_translate_thread, args=(name, func,pytorchFile,tlFile,outputFilename)).start()
             
         def translate_clicked(textwidget,pytorchFile,tlFile):          
             outputFilename = AS('File name', 'What would you like to name your output file?')  
@@ -353,10 +379,19 @@ class Display:
         self.button_tab1_Fr.grid(row=2,column=1, pady=20,sticky=tk.E)
         
         self.btn_upload_tab1 = ttk.Button(self.button_tab1_Fr, text = "Upload", command=lambda:updTrans(self.text_area))
-        self.btn_upload_tab1.grid(row=0,column=0)
+        self.btn_upload_tab1.grid(row=0,column=2)
         self.btn_translate = ttk.Button(self.button_tab1_Fr, text="Translate", command=lambda: translate_clicked(self.translated_text_area,self.modelPtFile,self.origTlFile))
-        self.btn_translate.grid(row=0,column=1)
+        self.btn_translate.grid(row=0,column=3)
         self.btn_translate["state"] = tk.DISABLED
+        
+        self.btn_vocab = ttk.Button(self.button_tab1_Fr,text="Build Vocab",command=lambda: vocab_clicked(onmtVocab,10000))
+        self.btn_vocab.grid(row = 0, column= 0)
+        
+        self.btn_train = ttk.Button(self.button_tab1_Fr, text="Train", command=lambda: train_clicked(onmtTrain))
+        self.btn_train.grid(row=0, column = 1)
+        
+        def ensure_command():
+            time.sleep(99999)
         ##2ND TAB
         ##FOR EVALUATION
         ##STAGE
@@ -524,28 +559,20 @@ class Display:
             textwidgets[1].insert(tk.INSERT,self.candLineList[0] + "\n " + candPOS)
             textwidgets[1].configure(state='disabled')
             
-            self.linesLbl["text"] = 'line 1 of ' + str(self.numOfLines)
-            
             bleuSc = sentence_bleu(list(self.refLineList[0]), list(self.candLineList[0]), weights=(1, 0, 0, 0))
             format_bleuSc = "{:.2f}".format(bleuSc)
-            self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
             self.bleuY.append(bleuSc)
-            self.avgBleu_lbl["text"] = 'Average bleu score so far: ' + str(format_bleuSc)
             
             grossSc = structure_evaluation(self.nlp(self.refLineList[0]), self.nlp(self.candLineList[0]),bleuSc)
             format_grossSc = "{:.2f}".format(grossSc['grs'])
-            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
             self.grossY.append(grossSc['grs'])
-            self.avgStruct_lbl["text"] = 'Average Structure sensitive Bleu score so far: ' + str(format_grossSc)
             
             self.xCoord.append(self.xCoordCounter)
             self.xCoordCounter+=1
             
             correctlyPOSstr = slicePersonal(grossSc['correctly placed tags'])                                                        
-            self.corr_lbl["text"] = f'Correctly placed POS tags:' + correctlyPOSstr
 
-            self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0]))
-
+            updateEvalLabels(1,str(self.numOfLines),str(format_bleuSc),str(format_bleuSc),str(format_grossSc),str(format_grossSc),correctlyPOSstr,compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0])))
             self.evalBtn["state"] = tk.NORMAL
             self.lastBtn["state"] = tk.NORMAL
             
@@ -584,22 +611,22 @@ class Display:
                 self.calTextarea.insert(tk.INSERT,self.candLineList[self.counter] + "\n" + candPOS)
                 self.calTextarea.configure(state='disabled')
 
-                self.linesLbl["text"] = f'line {str(self.lineCounter)} of {str(self.numOfLines)}'  
+                  
                 bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
                 format_bleuSc = "{:.2f}".format(bleuSc)
-                self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
+                
                 self.bleuY.append(bleuSc)
                 
                 avgBleu = "{:.2f}".format(sum(self.bleuY)/len(self.bleuY)) 
-                self.avgBleu_lbl["text"] = 'Average bleu score so far: ' + str(avgBleu)
+                
                 
                 grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
                 format_grossSc = "{:.2f}".format(grossSc['grs'])
-                self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
+                
                 self.grossY.append(grossSc['grs'])
                 
                 avgStructBleu = "{:.2f}".format(sum(self.grossY)/len(self.grossY))
-                self.avgStruct_lbl["text"] = 'Average Structure sensitive Bleu score so far: ' + str(avgStructBleu)
+               
                 
                 self.xCoord.append(self.xCoordCounter)
                 self.xCoordCounter+=1
@@ -608,12 +635,10 @@ class Display:
                 # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
                 # a.plot(self.xCoord, self.grossY, label = "gross Score")
                 # a.legend()
-                
                 correctlyPOSstr = slicePersonal(grossSc['correctly placed tags'])
-                self.corr_lbl["text"] = f'Correctly placed POS tags:' + correctlyPOSstr
-
-                self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter]))
+               
                 
+                updateEvalLabels(str(self.lineCounter),str(self.numOfLines),str(format_bleuSc),str(avgBleu),str(format_grossSc),str(avgStructBleu),correctlyPOSstr,compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter])))
                 showGraph()
             except IndexError:
                 self.calTextarea.configure(state='normal')
@@ -681,26 +706,21 @@ class Display:
             self.calTextarea.insert(tk.INSERT,self.candLineList[-1] + "\n" + candPOS)
             self.calTextarea.configure(state='disabled')
             
-            self.linesLbl["text"] = f'line {str(self.numOfLines)} of {str(self.numOfLines)}'  
-            
             bleuSc = sentence_bleu(list(self.refLineList[-1]), list(self.candLineList[-1]), weights=(1, 0, 0, 0))
             format_bleuSc = "{:.2f}".format(bleuSc)
-            self.bleu_lbl["text"] = 'standard bleu score: ' + str(format_bleuSc)
             
             avgBleu = "{:.2f}".format(sum(self.bleuY)/len(self.bleuY)) 
-            self.avgBleu_lbl["text"] = 'Average bleu score so far: ' + str(avgBleu)
                 
             grossSc = structure_evaluation(self.nlp(self.refLineList[-1]), self.nlp(self.candLineList[-1]),bleuSc)
             format_grossSc = "{:.2f}".format(grossSc['grs'])
-            self.gross_lbl["text"] = 'Structure sensitive Bleu score: ' + str(format_grossSc)
+            
             
             avgStructBleu = "{:.2f}".format(sum(self.grossY)/len(self.grossY))
-            self.avgStruct_lbl["text"] = 'Average Structure sensitive Bleu score so far: ' + str(avgStructBleu)
+            
                 
             correctlyPOSstr = slicePersonal(grossSc['correctly placed tags'])
-            self.corr_lbl["text"] = f'Correctly placed POS tags:' + correctlyPOSstr
-
-            self.compare_lbl["text"] = f'Number of correctly placed tags:' + compare_POS(self.nlp(self.refLineList[-1]),self.nlp(self.candLineList[-1]))
+        
+            updateEvalLabels(str(self.numOfLines),str(self.numOfLines),str(format_bleuSc),str(avgBleu),str(format_grossSc),str(avgStructBleu),correctlyPOSstr,compare_POS(self.nlp(self.refLineList[-1]),self.nlp(self.candLineList[-1])))
             showGraph()
         
         self.lastBtn = ttk.Button(self.buttonFr, text="Skip to Last", command = lambda: skipToLast())
@@ -710,6 +730,16 @@ class Display:
             
         ##self.reftxt = ttk.Label(self.tab2, text = self.ref_being_evaluated)
         ##self.reftxt.place(relx=0.5, rely=0.5,anchor='center')
+        
+        def updateEvalLabels(line_number,total_lines,std_bleu_score,avg_std_bleu,struct_bleu_score,avg_struct_bleu,correct_lbls,compared_lbls):
+            self.linesLbl["text"] = f"Line {line_number} of {total_lines}"
+            self.bleu_lbl["text"] = f"Standard bleu score: {std_bleu_score}"
+            self.avgBleu_lbl["text"] = f"Average bleu score so far: {avg_std_bleu}"
+            self.gross_lbl["text"] = f"Structure sensitive Bleu score: {struct_bleu_score}"
+            self.avgStruct_lbl["text"] = f"Average Structure sensitive Bleu score so far: {avg_struct_bleu}"
+            self.corr_lbl["text"] = f"Correctly placed POS tags: {correct_lbls}"
+            self.compare_lbl["text"] = f"Number of correctly placed tags: {compared_lbls}"
+            
         
         def showGraph():
             f = Figure(figsize=(3,3),dpi=85)
