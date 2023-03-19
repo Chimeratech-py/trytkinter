@@ -45,15 +45,21 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
     referencePOSlist = getPOS(referencetxt)
     candidatePOSlist = getPOS(candidatetxt)
     
-    #referencePOSlist = ['DET', 'VERB', 'DET', 'NOUN']
-    #candidatePOSlist = ['DET', 'DET', 'NOUN', 'VERB']
+    #referencePOSlist = ['DET', 'VERB', 'DET', 'NOUN', 'ADP']
+    #candidatePOSlist = ['DET', 'DET', 'NOUN', 'VERB', 'ADP']
+    
+    #2 out 5 matching
     
     returnDictionary = {'grs': 0,'correctly placed tags': []}
     
+    #counter is for looping
+    #correctcounter counts the number of correctly placed tags
     counter = 0
     correctcounter = 0
     candidateLength = len(candidatePOSlist)
         
+    #if-else statement logic: Count the number of correctly 
+    # placed tags by incrementing correctcounter variable everytime a matching POS tag is found across the candidate text and reference text
     if(len(referencePOSlist)>candidateLength):
         while(len(referencePOSlist) > counter):
             try:
@@ -76,13 +82,13 @@ def structure_evaluation(referencetxt,candidatetxt,netscore):
             finally:
                 counter+=1  
             
-   
+    #Calculating the final score. Mistakes is calculated by subtracting the correctcounter from the length of the candidate text
     mistakes = candidateLength - correctcounter
-    
+    #partial is calculated by bleu score divided by the candidate length
     partial = netscore/candidateLength
-    
+    #deduction is calculated by mistakes times the partial
     deduction = mistakes*partial
-       
+    #grossscore is the final score, which is the bleu score minus the deduction  
     grossscore = netscore - deduction
     
     returnDictionary['grs'] = grossscore
@@ -279,7 +285,7 @@ class Display:
         def onmtTrain():            
             try:
                 #ensure_command()
-                os.system(r'onmt_train -config en_tl.yaml')
+                os.system(r'onmt_train -config en_tl.yaml 1>opennmt.log 2>&1')
             except AttributeError:
                 tk.messagebox.showerror("Attribute error",  "Incompatible system requirements")
             ##returned_value = os.system(r'cmd /k onmt_train -config en_tl.yaml')
@@ -384,11 +390,11 @@ class Display:
         self.btn_translate.grid(row=0,column=3)
         self.btn_translate["state"] = tk.DISABLED
         
-        self.btn_vocab = ttk.Button(self.button_tab1_Fr,text="Build Vocab",command=lambda: vocab_clicked(onmtVocab,10000))
-        self.btn_vocab.grid(row = 0, column= 0)
+        # self.btn_vocab = ttk.Button(self.button_tab1_Fr,text="Build Vocab",command=lambda: vocab_clicked(onmtVocab,10000))
+        # self.btn_vocab.grid(row = 0, column= 0)
         
-        self.btn_train = ttk.Button(self.button_tab1_Fr, text="Train", command=lambda: train_clicked(onmtTrain))
-        self.btn_train.grid(row=0, column = 1)
+        # self.btn_train = ttk.Button(self.button_tab1_Fr, text="Train", command=lambda: train_clicked(onmtTrain))
+        # self.btn_train.grid(row=0, column = 1)
         
         def ensure_command():
             time.sleep(99999)
