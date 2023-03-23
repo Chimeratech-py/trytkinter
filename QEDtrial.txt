@@ -1,0 +1,4 @@
+Translation pair: QEDreference.txt and QEDcand.txt 
+Number of lines: 21 
+Average bleu score: 0.42 
+Average SSbleu score: 0.13

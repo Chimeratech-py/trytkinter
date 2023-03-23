@@ -520,6 +520,8 @@ class Display:
         
         self.candLineList = []
         
+        self.refFileName = ''
+        self.candFileName = ''
         def Upload(textwidgets):
             
             self.refLineList = []
@@ -533,9 +535,9 @@ class Display:
             tk.messagebox.showinfo("Upload file",  "Select a reference text file")
             
             refDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
-            refFileName = os.path.split(refDir)[1]
+            self.refFileName = os.path.split(refDir)[1]
             
-            with open(refFileName, 'r') as reFileLines:
+            with open(self.refFileName, 'r') as reFileLines:
                 c = 0
                 for line in reFileLines:
                     self.refLineList.append(line)
@@ -551,11 +553,11 @@ class Display:
             tk.messagebox.showinfo("Upload file",  "Select a candidate text file")
             
             candDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
-            candFileName = os.path.split(candDir)[1]
+            self.candFileName = os.path.split(candDir)[1]
             
             
             
-            with open(candFileName,'r') as candFileLines:
+            with open(self.candFileName,'r') as candFileLines:
                 for line in candFileLines:
                     self.candLineList.append(line)
 
@@ -581,6 +583,7 @@ class Display:
             updateEvalLabels(1,str(self.numOfLines),str(format_bleuSc),str(format_bleuSc),str(format_grossSc),str(format_grossSc),correctlyPOSstr,compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0])))
             self.evalBtn["state"] = tk.NORMAL
             self.lastBtn["state"] = tk.NORMAL
+            self.exportBtn["state"] = tk.NORMAL
             
             # a = self.f.add_subplot(111)
             # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
@@ -733,7 +736,37 @@ class Display:
         self.lastBtn["state"] = tk.DISABLED
         self.lastBtn.grid(row=3,column=0)
         
+        def exportScores():
+            outputFilename = AS('File name', 'What would you like to name your output file?')
+            outputFilename = outputFilename.replace(' ','-')
+            bleuYLocal = []
+            grossYLocal = []
+            counter = 0
+            while counter < len(self.refLineList):
+                bleuSc = sentence_bleu(list(self.refLineList[counter]), list(self.candLineList[counter]), weights=(1, 0, 0, 0))
+                bleuYLocal.append(bleuSc)
+                
+                grossSc = structure_evaluation(self.nlp(self.refLineList[counter]), self.nlp(self.candLineList[counter]),bleuSc)
+                grossYLocal.append(grossSc['grs'])
+                
+                counter+=1
+                
+            avgBleu = "{:.2f}".format(sum(bleuYLocal)/len(bleuYLocal)) 
+            avgStructBleu = "{:.2f}".format(sum(grossYLocal)/len(grossYLocal))
             
+            with open(outputFilename + '.txt','w') as writer:
+                writer.write(f"Translation pair: {self.refFileName} and {self.candFileName} \n")
+                writer.write(f"Number of lines: {len(self.refLineList)} \n")
+                writer.write(f"Average bleu score: {avgBleu} \n")
+                writer.write(f"Average SSbleu score: {avgStructBleu}")
+                
+            tk.messagebox.showinfo("Success",  "Data file created successfully")
+        
+        self.exportBtn = ttk.Button(self.buttonFr, text="Export", command = lambda: exportScores())
+        self.exportBtn["state"] = tk.DISABLED
+        self.exportBtn.grid(row=4,column=0)
+                
+                
         ##self.reftxt = ttk.Label(self.tab2, text = self.ref_being_evaluated)
         ##self.reftxt.place(relx=0.5, rely=0.5,anchor='center')
         
