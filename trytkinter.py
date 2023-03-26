@@ -513,15 +513,18 @@ class Display:
         # self.refBtn = ttk.Button(self.tab2, text="Choose Reference text file", command=lambda: chooseRefText(self.refTextarea))
         # self.refBtn.grid(row=6, column = 1)
         
+        self.refFileName = ''
+        self.candFileName = ''
+        
         self.xCoord = []
         self.xCoordCounter = 1
         self.bleuY = []
         self.grossY = []
         
         self.candLineList = []
+        self.correctlyPlacedPOSY = []
         
         def Upload(textwidgets):
-            
             self.refLineList = []
             self.xCoord = []
             self.xCoordCounter = 1
@@ -533,9 +536,9 @@ class Display:
             tk.messagebox.showinfo("Upload file",  "Select a reference text file")
             
             refDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
-            refFileName = os.path.split(refDir)[1]
+            self.refFileName = os.path.split(refDir)[1]
             
-            with open(refFileName, 'r') as reFileLines:
+            with open(self.refFileName, 'r') as reFileLines:
                 c = 0
                 for line in reFileLines:
                     self.refLineList.append(line)
@@ -551,11 +554,9 @@ class Display:
             tk.messagebox.showinfo("Upload file",  "Select a candidate text file")
             
             candDir = fd.askopenfilename(filetypes=[("Text files", "*.txt")])
-            candFileName = os.path.split(candDir)[1]
+            self.candFileName = os.path.split(candDir)[1]
             
-            
-            
-            with open(candFileName,'r') as candFileLines:
+            with open(self.candFileName,'r') as candFileLines:
                 for line in candFileLines:
                     self.candLineList.append(line)
 
@@ -565,22 +566,26 @@ class Display:
             textwidgets[1].insert(tk.INSERT,self.candLineList[0] + "\n " + candPOS)
             textwidgets[1].configure(state='disabled')
             
-            bleuSc = sentence_bleu(list(self.refLineList[0]), list(self.candLineList[0]), weights=(1, 0, 0, 0))
-            format_bleuSc = "{:.2f}".format(bleuSc)
-            self.bleuY.append(bleuSc)
+            counterLocal = 0
+            while counterLocal < len(self.refLineList):
+                bleuSc = sentence_bleu(list(self.refLineList[counterLocal]),list(self.candLineList[counterLocal]), weights=(1,0,0,0))
+                self.bleuY.append(bleuSc)
+                grossSc = structure_evaluation(self.nlp(self.refLineList[counterLocal]),self.nlp(self.candLineList[counterLocal]),bleuSc)
+                self.grossY.append(grossSc['grs'])
+                self.correctlyPlacedPOSY.append(grossSc['correctly placed tags'])
+                self.xCoord.append(self.xCoordCounter)
+                self.xCoordCounter+=1
+                counterLocal+=1
             
-            grossSc = structure_evaluation(self.nlp(self.refLineList[0]), self.nlp(self.candLineList[0]),bleuSc)
-            format_grossSc = "{:.2f}".format(grossSc['grs'])
-            self.grossY.append(grossSc['grs'])
+            format_bleuSc = "{:.2f}".format(self.bleuY[0])
+            format_grossSc = "{:.2f}".format(self.grossY[0])
             
-            self.xCoord.append(self.xCoordCounter)
-            self.xCoordCounter+=1
-            
-            correctlyPOSstr = slicePersonal(grossSc['correctly placed tags'])                                                        
+            correctlyPOSstr = slicePersonal(self.correctlyPlacedPOSY[0])                                                        
 
             updateEvalLabels(1,str(self.numOfLines),str(format_bleuSc),str(format_bleuSc),str(format_grossSc),str(format_grossSc),correctlyPOSstr,compare_POS(self.nlp(self.refLineList[0]),self.nlp(self.candLineList[0])))
             self.evalBtn["state"] = tk.NORMAL
             self.lastBtn["state"] = tk.NORMAL
+            self.prevBtn["state"] = tk.NORMAL
             
             # a = self.f.add_subplot(111)
             # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
@@ -600,7 +605,44 @@ class Display:
             hl.set_xdata(numpy.append(hl.get_xdata(), new_data))
             hl.set_ydata(numpy.append(hl.get_ydata(), new_data))
             plt.draw()
-            
+        
+        def prevEval():
+            try:
+                self.lineCounter-=1
+                self.counter-=1
+                self.refTextarea.configure(state='normal')
+                self.refTextarea.delete('1.0',tk.END)
+                refPOS = str(getPOS(self.nlp(self.refLineList[self.counter])))
+                self.refTextarea.insert(tk.INSERT,self.refLineList[self.counter] + "\n" + refPOS)
+                self.refTextarea.configure(state='disable')
+                
+                self.calTextarea.configure(state='normal')
+                self.calTextarea.delete('1.0',tk.END)
+                candPOS = str(getPOS(self.nlp(self.candLineList[self.counter])))
+                self.calTextarea.insert(tk.INSERT,self.candLineList[self.counter] + "\n" + candPOS)
+                self.calTextarea.configure(state='disabled')
+                
+                format_bleuSc = "{:.2f}".format(self.bleuY[self.counter])
+                avgBleu = "{:.2f}".format(sum(self.bleuY[:self.lineCounter])/self.lineCounter) 
+                
+                format_grossSc = "{:.2f}".format(self.grossY[self.counter])
+                avgStructBleu = "{:.2f}".format(sum(self.grossY[:self.lineCounter])/self.lineCounter)
+               
+                correctlyPOSstr = slicePersonal(self.correctlyPlacedPOSY[self.counter])
+               
+                
+                updateEvalLabels(str(self.lineCounter),str(self.numOfLines),str(format_bleuSc),str(avgBleu),str(format_grossSc),str(avgStructBleu),correctlyPOSstr,compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter])))
+                showGraph()
+                
+            except IndexError:
+                self.calTextarea.configure(state='normal')
+                self.calTextarea.delete('1.0',tk.END)
+                self.calTextarea.configure(state='disable')
+                tk.messagebox.showinfo("information",  "Reached end of text file")
+                
+        self.prevBtn = ttk.Button(self.buttonFr, text = "Previous", command=lambda: prevEval())
+        self.prevBtn["state"] = tk.DISABLED
+        self.prevBtn.grid(row=1,column = 0)
         def nextEval():
             try:
                 self.lineCounter+=1
@@ -616,32 +658,14 @@ class Display:
                 candPOS = str(getPOS(self.nlp(self.candLineList[self.counter])))
                 self.calTextarea.insert(tk.INSERT,self.candLineList[self.counter] + "\n" + candPOS)
                 self.calTextarea.configure(state='disabled')
-
-                  
-                bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
-                format_bleuSc = "{:.2f}".format(bleuSc)
                 
-                self.bleuY.append(bleuSc)
+                format_bleuSc = "{:.2f}".format(self.bleuY[self.counter])
+                avgBleu = "{:.2f}".format(sum(self.bleuY[:self.lineCounter])/self.lineCounter) 
                 
-                avgBleu = "{:.2f}".format(sum(self.bleuY)/len(self.bleuY)) 
-                
-                
-                grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
-                format_grossSc = "{:.2f}".format(grossSc['grs'])
-                
-                self.grossY.append(grossSc['grs'])
-                
-                avgStructBleu = "{:.2f}".format(sum(self.grossY)/len(self.grossY))
+                format_grossSc = "{:.2f}".format(self.grossY[self.counter])
+                avgStructBleu = "{:.2f}".format(sum(self.grossY[:self.lineCounter])/self.lineCounter)
                
-                
-                self.xCoord.append(self.xCoordCounter)
-                self.xCoordCounter+=1
-                
-                # a = self.f.add_subplot(111)
-                # a.plot(self.xCoord, self.bleuY, label = "bleu Score")
-                # a.plot(self.xCoord, self.grossY, label = "gross Score")
-                # a.legend()
-                correctlyPOSstr = slicePersonal(grossSc['correctly placed tags'])
+                correctlyPOSstr = slicePersonal(self.correctlyPlacedPOSY[self.counter])
                
                 
                 updateEvalLabels(str(self.lineCounter),str(self.numOfLines),str(format_bleuSc),str(avgBleu),str(format_grossSc),str(avgStructBleu),correctlyPOSstr,compare_POS(self.nlp(self.refLineList[self.counter]),self.nlp(self.candLineList[self.counter])))
@@ -655,7 +679,7 @@ class Display:
             
         self.evalBtn = ttk.Button(self.buttonFr, text = "Next", command=lambda: nextEval())
         self.evalBtn["state"] = tk.DISABLED
-        self.evalBtn.grid(row=1,column = 0)
+        self.evalBtn.grid(row=2,column = 0)
         
         
         def skipLines():
@@ -687,19 +711,7 @@ class Display:
         #self.skipBtn = ttk.Button(self.buttonFr, text = "Show average", command=lambda: skipLines())
         #self.skipBtn.grid(row=2,column=0)
         
-        def skipToLast():
-            while self.counter < len(self.refLineList):
-                bleuSc = sentence_bleu(list(self.refLineList[self.counter]), list(self.candLineList[self.counter]), weights=(1, 0, 0, 0))
-                self.bleuY.append(bleuSc)
-                
-                grossSc = structure_evaluation(self.nlp(self.refLineList[self.counter]), self.nlp(self.candLineList[self.counter]),bleuSc)
-                self.grossY.append(grossSc['grs'])
-                
-                self.xCoord.append(self.xCoordCounter)
-                self.xCoordCounter+=1
-
-                self.counter+=1
-            
+        def skipToLast():        
             self.refTextarea.configure(state='normal')
             self.refTextarea.delete('1.0',tk.END)
             refPOS = str(getPOS(self.nlp(self.refLineList[-1])))
@@ -750,8 +762,8 @@ class Display:
         def showGraph():
             f = Figure(figsize=(3,3),dpi=85)
             a = f.add_subplot(111)
-            a.plot(self.xCoord, self.bleuY, label = "bleu Score")
-            a.plot(self.xCoord, self.grossY, label = "SS Bleu Score")
+            a.plot(self.xCoord[:self.lineCounter], self.bleuY[:self.lineCounter], label = "bleu Score")
+            a.plot(self.xCoord[:self.lineCounter], self.grossY[:self.lineCounter], label = "SS Bleu Score")
             a.legend()
             
             canvas = FigureCanvasTkAgg(f,self.tab2)
