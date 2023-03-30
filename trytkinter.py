@@ -711,7 +711,10 @@ class Display:
         #self.skipBtn = ttk.Button(self.buttonFr, text = "Show average", command=lambda: skipLines())
         #self.skipBtn.grid(row=2,column=0)
         
-        def skipToLast():        
+        def skipToLast():
+            self.lineCounter = len(self.refLineList)
+            self.counter = self.lineCounter - 1
+            #Should counter also update?       
             self.refTextarea.configure(state='normal')
             self.refTextarea.delete('1.0',tk.END)
             refPOS = str(getPOS(self.nlp(self.refLineList[-1])))
