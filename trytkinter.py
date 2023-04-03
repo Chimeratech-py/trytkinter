@@ -20,13 +20,19 @@ from tkinter.simpledialog import askstring as AS
 from threading import Thread
 
 def slicePersonal(li):
-    if len(li) > 4:
-        firstLi = li[0:4]
-        secondLi = li[4:]
-        
-        return str(firstLi) + " \n" + str(secondLi)
-    else:
-        return str(li)
+    
+    li = list(filter(lambda a: a != " \n", li))
+    
+    lll = li
+    counter = 4
+    for i in lll:
+        if counter<len(lll):
+            lll.insert(counter," \n")
+            counter+=4
+    s = " "
+    s = s.join(lll)
+    return s
+
 
 def getPOS(inputtext):
     c = 0
